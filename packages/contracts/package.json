@@ -1,0 +1,37 @@
+{
+  "name": "@workspace/contracts",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    "./deployments.json": "./deployments.json"
+  },
+  "scripts": {
+    "dev": "npx hardhat node --network hardhat",
+    "build": "npx hardhat compile",
+    "test": "npx hardhat test nodejs",
+    "deploy": "npm run build && npx hardhat ignition deploy ignition/modules/Strategy.ts --network localhost --reset --parameters ignition/parameters/hardhat.json && npm run generate-abi && bun run scripts/configure-factory-ens.ts",
+    "deploy:sepolia": "npm run build && npx hardhat ignition deploy ignition/modules/Strategy.sepolia.ts --network sepolia --parameters ignition/parameters/sepolia.json && npm run generate-abi",
+    "deploy:mainnet": "npm run build && npx hardhat ignition deploy ignition/modules/Strategy.production.ts --network mainnet --parameters ignition/parameters/mainnet.json && npm run generate-abi",
+    "seed": "bun run scripts/seed.ts",
+    "generate-abi": "bun run scripts/generate-abi.ts",
+    "verify-ens": "bun run scripts/verify-ens.ts",
+    "verify-ens:sepolia": "bun run scripts/verify-ens-sepolia.ts",
+    "lint": "forge fmt",
+    "lint:fix": "forge fmt --fix"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ignition": "^3.0.7",
+    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.2",
+    "@types/node": "^22.8.5",
+    "forge-std": "github:foundry-rs/forge-std#v1.9.4",
+    "hardhat": "^3.1.5",
+    "typescript": "~5.8.0",
+    "viem": "^2.43.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0",
+    "@openzeppelin/contracts-upgradeable": "^5.4.0",
+    "dotenv": "^17.2.3",
+    "ethers": "^6.16.0"
+  }
+}

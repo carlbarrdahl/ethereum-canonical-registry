@@ -1,0 +1,95 @@
+---
+title: Capital Allocation Infrastructure for Ethereum
+description: Permissionless, non-custodial protocol for sustainable public goods funding
+---
+
+# Capital Allocation Infrastructure for Ethereum
+
+## The Challenge
+
+Public goods funding in Ethereum remains fragmented. Treasuries sit idle while curators lack credibly neutral tools to express allocation intent. Donors face opacity—where does capital flow? Is it custodial? What are the actual fee structures? Meanwhile, the infrastructure for *sustainable* funding (principal-preserving, yield-based) barely exists.
+
+## Curator Studio: Allocation Primitives for the Ecosystem
+
+Curator Studio provides minimal, composable smart contracts for transparent capital allocation. It enables curators to deploy weighted allocation strategies, route DeFi yield to recipients, and build fund-of-funds hierarchies—all non-custodially.
+
+```
+Capital Provider → YieldRedirector → Source Vault (Morpho/Euler)
+                                            │
+                                       generates yield
+                                            │
+                                            ▼
+                     Strategy (40% Protocol Guild, 30% Client Teams, 30% Tools)
+                                            │
+                                       distribute()
+                                            │
+                                            ▼
+                     Warehouse → Recipients withdraw at convenience
+```
+
+## Core Properties
+
+| Property | Implementation |
+|----------|----------------|
+| **Non-custodial** | Strategies cannot withdraw funds—only route to configured recipients via SplitsWarehouse |
+| **Permissionless** | Anyone creates strategies; anyone triggers distribution; no gatekeepers |
+| **Transparent** | All allocations on-chain; all distributions indexed; fee structures visible in weights |
+| **Composable** | Strategies nest (fund-of-funds); ERC-4626 yield vaults; ERC-6909 warehouse; ENS naming |
+| **Credibly neutral** | No admin keys; immutable allocation logic; owner can only rebalance, never extract |
+
+## Sustainable Funding via Yield Redirection
+
+The `YieldRedirector4626` solves the endowment problem: principal preservation with continuous yield-based funding.
+
+**Example: 10M DAI treasury allocation**
+- Deposit to YieldRedirector wrapping sDAI (Spark)
+- ~5% APY = ~500k/year in yield
+- Yield harvested to Strategy, distributed to recipients
+- Principal remains fully withdrawable
+
+This creates perpetual funding without capital depletion—the model Protocol Guild pioneered, made permissionless and composable.
+
+## Fund-of-Funds Architecture
+
+Strategies can allocate to other strategies, enabling hierarchical curation:
+
+```
+Ecosystem Fund
+├── 50% → Infrastructure Strategy
+│         ├── 60% → Protocol Guild
+│         └── 40% → Client Teams Split
+├── 30% → Developer Tooling Strategy
+│         ├── 50% → Foundry/Hardhat
+│         └── 50% → Auditing Tools
+└── 20% → Research Strategy
+```
+
+Curators at each level express domain expertise. Capital providers choose entry points matching their values. Attribution and provenance tracked via fork lineage.
+
+## Technical Design Choices
+
+**Weight-based allocations** over percentages: Adding recipients doesn't require recalculating others. Any precision without summing to 100.
+
+**SplitsWarehouse (ERC-6909)**: Pull-based withdrawals isolate failures. Reverting recipients don't block distribution. Recipients batch claims across multiple strategies.
+
+**EIP-1167 minimal proxies**: 5x cheaper deployment (~100k gas vs ~500k). Every strategy shares implementation code.
+
+**Fees as allocations**: Curator fees are regular allocation entries. No special handling, full transparency, any fee structure supported.
+
+## What This Enables
+
+For **treasuries**: Deploy idle capital to yield vaults; route yield to grantees; principal preserved.
+
+For **curators**: Express allocation intent on-chain. Build reputation through verifiable distributions. Fork and remix existing strategies.
+
+For **donors**: Fund strategies matching your values. Full visibility into allocation rules and capital flows. No custody risk.
+
+For **the ecosystem**: Auditable marketplace of funding destinations. Composable primitives for any allocation use case. Infrastructure that compounds—recipients can become curators, strategies can nest infinitely.
+
+## Status
+
+Proof-of-concept deployed. Contracts audited for core functionality. Production roadmap includes timelock for rebalancing (front-running protection), minimum harvest thresholds, and cross-chain deployment.
+
+---
+
+*Curator Studio is infrastructure for the long-term sustainability of Ethereum public goods. Permissionless. Non-custodial. Transparent. Built to compound.*

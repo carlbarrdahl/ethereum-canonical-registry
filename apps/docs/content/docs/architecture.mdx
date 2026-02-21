@@ -1,0 +1,162 @@
+---
+title: Architecture
+description: System design, capital flows, security model, and technical decisions
+---
+
+# Architecture
+
+## System Overview
+
+```
+┌───────────────────────────────────────────────────────────────────────┐
+│                         ON-CHAIN                                      │
+│                                                                       │
+│  Curator ──▶ StrategyFactory ──▶ Strategy (clone) ──▶ Warehouse    │
+│                                      ▲                    │           │
+│              Donors ─── fund ────────┘              withdraw          │
+│                                                           ▼           │
+│              YieldRedirector ──▶ Source Vault        Recipients      │
+│                    │                                                  │
+│               harvest() ──▶ Strategy ──▶ Warehouse                  │
+│                                                                       │
+├───────────────────────────────────────────────────────────────────────┤
+│                        OFF-CHAIN                                      │
+│                                                                       │
+│  Contracts ──events──▶ Indexer (Ponder) ◀──queries──▶ SDK ──▶ Web │
+└───────────────────────────────────────────────────────────────────────┘
+```
+
+### On-Chain Layer
+
+| Contract | Purpose | Pattern |
+|---|---|---|
+| **StrategyFactory** | Deploys Strategy clones | Factory + EIP-1167 clones |
+| **Strategy** | Holds allocations, distributes funds | Minimal proxy clone |
+| **SplitsWarehouse** | Holds recipient balances | External singleton (0xSplits) |
+| **YieldRedirectorFactory** | Deploys YieldRedirector clones | Factory + EIP-1167 clones |
+| **YieldRedirector4626** | Wraps ERC-4626 vaults, redirects yield | Minimal proxy clone |
+| **ForeverSubnameRegistrar** | Manages `.support.eth` ENS subdomains | External singleton |
+
+### Off-Chain Layer
+
+| Component | Purpose |
+|---|---|
+| **Indexer** (Ponder) | Processes contract events, maintains queryable state via GraphQL + REST |
+| **SDK** (`@workspace/sdk`) | TypeScript client for contracts and indexer, React hooks |
+| **Web App** (`@workspace/web`) | Next.js 16 frontend with Shadcn UI |
+
+---
+
+## Capital Flows
+
+### Direct Funding
+
+```
+Donor ──(transfer)──▶ Strategy ──(distribute)──▶ Warehouse ──(withdraw)──▶ Recipients
+```
+
+1. Donor sends ERC-20 or ETH to the strategy address (or ENS name)
+2. Anyone calls `distribute(token)` — calculates shares by weight, batch-deposits to warehouse
+3. Recipients call `withdraw(owner, token)` when ready
+
+### Yield Funding
+
+```
+Capital Provider ──(deposit)──▶ YieldRedirector ──▶ Source Vault
+                                                          │
+                                                    generates yield
+                                                          │
+                                    harvest() ◀──────────┘
+                                       │
+                                       ▼
+                                  Strategy ──(distribute)──▶ Warehouse ──▶ Recipients
+```
+
+1. Capital provider deposits into YieldRedirector
+2. Assets route to source vault (Morpho, Euler, etc.) which generates yield
+3. Anyone calls `harvest()` — skims surplus above principal, sends to Strategy, triggers `distribute()`
+4. Capital provider can withdraw principal at any time
+
+### Fund-of-Funds
+
+When a strategy allocates to another strategy, distribution credits the child strategy's warehouse balance. The child strategy then needs a separate `distribute()` call to route funds to its own recipients. This enables hierarchical curation with independent distribution at each level.
+
+---
+
+## Security Model
+
+### Trust Assumptions
+
+| Actor | Trust Level | Capabilities |
+|---|---|---|
+| **Strategy Owner** | Trusted for allocations only | Can rebalance. Cannot withdraw, pause, or upgrade. |
+| **Donors** | Trustless | Send funds directly. No approval needed. |
+| **Recipients** | Trustless | Pull from warehouse. Isolated failures. |
+| **Protocol** | Trustless | No admin keys. No upgrade authority. |
+
+### Non-Custodial Properties
+
+The Strategy contract has **no withdrawal function**. Funds can only leave via `distribute()`, which routes to configured recipients through the warehouse. The owner can change *where* funds go (rebalance) but can never extract funds.
+
+Distribution is **permissionless** — anyone can call `distribute()`. This prevents funds from being locked by an inactive owner.
+
+Recipients **self-custody** — only the balance owner (or delegate) can call `warehouse.withdraw()`. No one can redirect, freeze, or force withdrawals.
+
+### Failure Isolation
+
+- Each strategy is independent — no shared state except warehouse
+- Batch deposit to warehouse means reverting recipients don't block others
+- Factory is stateless beyond the implementation address — no admin, no pause
+
+### Security Features
+
+- `ReentrancyGuard` on all state-changing functions (`distribute`, `harvest`, `deposit`, `withdraw`)
+- `SafeERC20` for all token operations
+- Checks-Effects-Interactions pattern throughout
+- Custom errors for gas efficiency
+- `_disableInitializers()` on implementation contracts
+
+### Known Limitations (POC)
+
+| Limitation | Risk | Production Solution |
+|---|---|---|
+| No rebalance timelock | Owner can front-run large donations | 24-48h timelock on `rebalance()` |
+| No minimum distribution | Gas griefing via tiny distributions | `MIN_DISTRIBUTION` threshold |
+| No emergency pause | Cannot halt on vulnerability discovery | Pausable with multisig + timelock |
+| No harvest cooldown | Gas griefing on yield redirector | Cooldown period between harvests |
+| Fee-on-transfer tokens | Balance calculations incorrect | Token allowlist or explicit warning |
+| Rebasing tokens | Share accounting breaks | Not supported |
+
+### Invariants
+
+**Strategy**: `totalWeight == sum(allocations[i].weight)`, `allocations.length <= 50`, all recipients non-zero, all weights > 0.
+
+**YieldRedirector**: `principal <= sourceVault value`, `totalSupply() == principal` (1:1 shares), `surplus() >= 0`.
+
+---
+
+## Technical Decisions
+
+### Weights Over Percentages
+
+Weights allow adding recipients without recalculating existing allocations. No need to sum to 100. Any precision supported.
+
+### Pull-Based Warehouse (0xSplits)
+
+One batch deposit instead of N transfers. Reverting recipients don't block distribution. Recipients accumulate from multiple strategies and claim when convenient. Battle-tested code from the Splits ecosystem.
+
+### Fees as Allocations
+
+Curator fees are regular allocations — no special fee handling code. Fully transparent, any fee structure, same code path for fees and recipients.
+
+### ERC-4626 for Yield Redirector
+
+Standard vault interface for composability. `totalAssets()` overridden to return principal only, keeping share price stable at 1:1 so yield is cleanly separable.
+
+### EIP-1167 Minimal Proxies
+
+~100k gas per strategy deployment instead of ~500k. All clones share the implementation contract. Trade-off: slightly higher per-call gas from DELEGATECALL, cannot upgrade individual clones.
+
+### ENS Subdomains
+
+Free, permanent `.support.eth` subdomains instead of requiring users to buy their own ENS names. Consistent namespace for discovery. Both forward resolution (name → address) and reverse resolution (address → name) are set up during registration.

@@ -1,0 +1,84 @@
+---
+title: Concepts
+description: Mental model for Curator Studio — strategies, allocations, warehouse, yield, and ENS
+---
+
+# Concepts
+
+Curator Studio is built on a small set of composable primitives. This page explains the mental model. For precise behavior, see [Requirements](/docs/requirements).
+
+## Strategies
+
+A **Strategy** is a smart contract that defines weighted allocation rules. It accepts funds (ERC-20 or ETH), holds them until distribution, and then routes them to recipients via the SplitsWarehouse. The strategy owner can rebalance allocations but cannot withdraw funds — this is the core non-custodial property.
+
+Strategies can be **forked** to create variations. Forks track lineage for attribution, discovery, and reputation building.
+
+## Allocations
+
+Each allocation has a **recipient** (any Ethereum address), a **weight** (relative share), and a **label** (human-readable name).
+
+Weights are not percentages — each recipient's share is `weight / totalWeight`. This means adding a new recipient doesn't require recalculating existing weights:
+
+| Allocations | Resulting split |
+|---|---|
+| `{A: 1, B: 1}` | 50% / 50% |
+| `{A: 1, B: 1, C: 1}` | 33% / 33% / 33% |
+| `{A: 7, B: 3}` | 70% / 30% |
+
+**Curator fees are regular allocations.** There's no special fee mechanism — the curator simply adds their own address as a recipient. This makes fees fully transparent and auditable.
+
+## SplitsWarehouse
+
+The warehouse is a shared ERC-6909 multi-token vault (from [0xSplits](https://splits.org/)) where distributed funds accumulate. It uses a **pull model**: recipients withdraw when ready, rather than receiving direct transfers during distribution.
+
+Why pull instead of push?
+
+- **Gas efficient** — one batch deposit instead of N individual transfers
+- **Failure isolated** — a reverting recipient doesn't block other recipients
+- **Convenient** — recipients accumulate from multiple strategies and claim in one place
+
+## Yield Redirector
+
+The **YieldRedirector4626** wraps any ERC-4626 vault (Morpho, Euler, Yearn) and redirects only the yield to a Strategy, while preserving the depositor's principal.
+
+```
+Capital Provider → YieldRedirector → Source Vault (earns yield)
+                                            │
+                                      harvest() skims yield
+                                            │
+                                            ▼
+                  Strategy → distribute() → Warehouse → Recipients
+```
+
+The depositor can withdraw their principal at any time. Only the yield — the surplus above principal — gets harvested and distributed. This enables endowment-style perpetual funding without capital depletion.
+
+## Fund-of-Funds
+
+Strategies can allocate to other strategies, creating hierarchical curation:
+
+```
+Ecosystem Fund
+├── 50% → Infrastructure Strategy
+│         ├── 60% → Protocol Guild
+│         └── 40% → Client Teams
+├── 30% → Developer Tooling Strategy
+│         ├── 50% → Foundry/Hardhat
+│         └── 50% → Auditing Tools
+└── 20% → Research Strategy
+```
+
+Each level distributes independently. Curators at each level express domain expertise. Capital providers choose entry points matching their values.
+
+## ENS Integration
+
+Strategies can register `.support.eth` subdomains (e.g., `opensource.support.eth`) for human-readable addresses. Donors can send funds to the ENS name from any compatible wallet instead of copying a hex address. ENS names can be set during strategy creation or connected to existing strategies later.
+
+## Design Principles
+
+| Principle | Implementation |
+|---|---|
+| **Non-custodial** | Strategies have no withdrawal function — funds can only flow to configured recipients via warehouse |
+| **Permissionless** | Anyone can create strategies, fund them, or trigger distributions. No gatekeepers. |
+| **Transparent** | All allocations on-chain. All distributions indexed. Fees visible as regular allocations. |
+| **Composable** | Strategies nest (fund-of-funds). ERC-4626 yield vaults. ERC-6909 warehouse. ENS naming. |
+| **Credibly neutral** | No admin keys. No upgrade authority. Owner can only rebalance, never extract. |

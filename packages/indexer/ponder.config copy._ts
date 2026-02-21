@@ -1,0 +1,203 @@
+import {
+  createConfig,
+  factory,
+  loadBalance,
+  rateLimit,
+  type ChainConfig,
+} from "ponder";
+import { type Abi, parseAbiItem } from "viem";
+import { hardhat, sepolia, mainnet } from "viem/chains";
+import { http } from "viem";
+import { getTokenAddresses, NATIVE_TOKEN } from "@workspace/sdk";
+
+import deployments from "./abis/deployments.json";
+
+// Environment detection
+const isDev = process.env.NODE_ENV === "development";
+
+// RPC URLs per chain with load balancing and rate limiting
+function getRpcTransport(chainId: number) {
+  switch (chainId) {
+    case hardhat.id:
+      // Local dev - no rate limiting needed
+      return http(process.env.PONDER_RPC_URL_31337 ?? "http://127.0.0.1:8545");
+
+    case sepolia.id: {
+      // Sepolia - use multiple providers with rate limiting
+      const providers = [];
+
+      // Primary RPC (Alchemy) - if provided
+      if (process.env.PONDER_RPC_URL_11155111) {
+        providers.push(
+          rateLimit(http(process.env.PONDER_RPC_URL_11155111), {
+            requestsPerSecond: 25, // Alchemy free tier limit
+            browser: false,
+          }),
+        );
+      }
+
+      // Public RPC fallbacks (reliable providers only)
+      // Removed: tatum.io (429 errors), pocket.network (no archive), ethpandaops.io (upstream failures)
+      providers.push(
+        rateLimit(http("https://ethereum-sepolia-rpc.publicnode.com"), {
+          requestsPerSecond: 3, // Very conservative to avoid rate limits
+          browser: false,
+        }),
+        rateLimit(http("https://ethereum-sepolia-public.nodies.app"), {
+          requestsPerSecond: 3,
+          browser: false,
+        }),
+        rateLimit(http("https://eth-sepolia.api.onfinality.io/public"), {
+          requestsPerSecond: 3,
+          browser: false,
+        }),
+        rateLimit(
+          http("https://ethereum-sepolia.rpc.subquery.network/public"),
+          {
+            requestsPerSecond: 3,
+            browser: false,
+          },
+        ),
+        rateLimit(http("https://sepolia.drpc.org"), {
+          requestsPerSecond: 3,
+          browser: false,
+        }),
+        rateLimit(http("https://1rpc.io/sepolia"), {
+          requestsPerSecond: 3,
+          browser: false,
+        }),
+        rateLimit(http("https://gateway.tenderly.co/public/sepolia"), {
+          requestsPerSecond: 2,
+          browser: false,
+        }),
+      );
+
+      return loadBalance(providers);
+    }
+
+    case mainnet.id: {
+      // Mainnet - use multiple providers with rate limiting
+      const providers = [];
+
+      // Primary RPC (Alchemy)
+      if (process.env.PONDER_RPC_URL_1) {
+        providers.push(
+          rateLimit(http(process.env.PONDER_RPC_URL_1), {
+            requestsPerSecond: 25, // Alchemy growth tier
+            browser: false,
+          }),
+        );
+      }
+
+      // Public RPC fallbacks with conservative rate limits
+      providers.push(
+        rateLimit(http("https://cloudflare-eth.com"), {
+          requestsPerSecond: 10,
+          browser: false,
+        }),
+        rateLimit(http("https://eth-mainnet.public.blastapi.io"), {
+          requestsPerSecond: 10,
+          browser: false,
+        }),
+      );
+
+      return providers.length > 1 ? loadBalance(providers) : providers[0];
+    }
+
+    default:
+      throw new Error(`No RPC configured for chain ${chainId}`);
+  }
+}
+
+// Define which chains to index based on environment
+const activeChains = {
+  // ...(isDev ? { hardhat } : {}),
+  sepolia,
+  // mainnet,
+};
+
+// Build chains config with load-balanced RPC
+const chains: Record<string, ChainConfig> = Object.fromEntries(
+  Object.entries(activeChains).map(([name, { id }]) => [
+    name,
+    {
+      id,
+      rpc: getRpcTransport(id),
+    },
+  ]),
+);
+
+const StrategyCreatedEvent = parseAbiItem(
+  "event StrategyCreated(address indexed strategy, (address owner, address sourceStrategy, (address recipient, uint96 weight, string label)[] allocations, string metadataURI) config)",
+);
+
+const Erc20Abi = [
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "from", type: "address" },
+      { indexed: true, name: "to", type: "address" },
+      { indexed: false, name: "value", type: "uint256" },
+    ],
+    name: "Transfer",
+    type: "event",
+  },
+] as const;
+
+function getDeployment(chainId: number, contractName: string) {
+  const chainDeployments =
+    deployments[String(chainId) as keyof typeof deployments];
+  return chainDeployments?.[contractName as keyof typeof chainDeployments] as {
+    address: `0x${string}`;
+    abi: Abi;
+    startBlock?: number;
+  };
+}
+
+function forChains<T>(fn: (chainId: number) => T): Record<string, T> {
+  return Object.fromEntries(
+    Object.entries(chains).map(([name, { id }]) => [name, fn(id)]),
+  );
+}
+
+export default createConfig({
+  chains,
+  contracts: {
+    StrategyFactory: {
+      abi: getDeployment(hardhat.id, "StrategyFactory").abi,
+      chain: forChains((id) => {
+        const d = getDeployment(id, "StrategyFactory");
+        return { address: d?.address, startBlock: d?.startBlock ?? 0 };
+      }),
+    },
+    Strategy: {
+      abi: getDeployment(hardhat.id, "Strategy").abi,
+      chain: forChains((id) => {
+        const factoryDeployment = getDeployment(id, "StrategyFactory");
+        return {
+          address: factory({
+            address: factoryDeployment?.address,
+            event: StrategyCreatedEvent,
+            parameter: "strategy",
+          }),
+          startBlock: factoryDeployment?.startBlock ?? 0,
+        };
+      }),
+    },
+    // ERC20 transfers to/from strategies
+    // Uses load-balanced, rate-limited RPC to handle the volume
+    Erc20: {
+      abi: Erc20Abi,
+      chain: forChains((id) => {
+        const factoryDeployment = getDeployment(id, "StrategyFactory");
+        return {
+          address: getTokenAddresses(id).filter(
+            (addr) => addr.toLowerCase() !== NATIVE_TOKEN.toLowerCase(),
+          ) as `0x${string}`[],
+          // Start from factory deployment to avoid indexing entire chain history
+          startBlock: factoryDeployment?.startBlock ?? 0,
+        };
+      }),
+    },
+  },
+});

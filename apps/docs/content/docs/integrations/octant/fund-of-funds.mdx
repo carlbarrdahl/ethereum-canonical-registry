@@ -1,0 +1,65 @@
+---
+title: Fund-of-Funds
+description: Cross-protocol funding hierarchies
+---
+
+# Fund-of-Funds
+
+Both Octant projects and Curator strategies can be allocation recipients. This enables cross-protocol hierarchies.
+
+## Cross-Protocol Structure
+
+```
+Ecosystem Meta-Fund
+├── 40% → Octant Community Round (QF)
+│         └── [community-selected projects]
+├── 35% → Curator Infrastructure Strategy
+│         ├── 60% → Protocol Guild
+│         └── 40% → Client Teams
+└── 25% → Curator Tooling Strategy
+          ├── 50% → Foundry
+          └── 50% → Hardhat
+```
+
+## Technical Integration
+
+**Meta-Strategy allocates to both ecosystems**:
+
+```solidity
+Allocation[] allocations = [
+    { recipient: octantQFRound, weight: 40, label: "Octant Community" },
+    { recipient: infrastructureStrategy, weight: 35, label: "Infrastructure" },
+    { recipient: toolingStrategy, weight: 25, label: "Tooling" }
+];
+```
+
+**Octant round as recipient**: Receives funds, runs allocation round, distributes to winners.
+
+**Curator strategies as recipients**: Receive funds, distribute per curator weights.
+
+## Unified Discovery
+
+```typescript
+// Query both ecosystems for funding destinations
+const curatorStrategies = await curatorIndexer.strategies.list();
+const octantProjects = await octantApi.projects.list();
+
+// Present unified view to capital providers
+const fundingDestinations = [
+  ...curatorStrategies.map(s => ({ type: 'curator', ...s })),
+  ...octantProjects.map(p => ({ type: 'octant', ...p })),
+];
+```
+
+## Why This Works
+
+- Capital providers choose entry point matching their values
+- Democratic (Octant QF) and opinionated (Curator) allocation coexist
+- Attribution flows through: meta-fund → sub-fund → recipient
+- Neither protocol "owns" the ecosystem
+
+## Considerations
+
+- Distribution timing across protocols
+- Consistent recipient identity (same project in both ecosystems)
+- Aggregated reporting across protocol boundaries

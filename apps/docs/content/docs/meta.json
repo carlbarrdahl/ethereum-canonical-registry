@@ -1,0 +1,12 @@
+{
+  "title": "Curator Studio",
+  "pages": [
+    "index",
+    "concepts",
+    "architecture",
+    "requirements",
+    "status",
+    "ecosystem-stakeholders",
+    "oss-foundations"
+  ]
+}

@@ -1,0 +1,145 @@
+---
+title: Curator Studio
+description: Permissionless, non-custodial capital allocation protocol for transparent public goods funding
+---
+
+# Curator Studio
+
+Curator Studio is a **permissionless, non-custodial capital allocation protocol** that enables curators to create and operate transparent funding strategies. Capital providers fund strategies matching their values while maintaining full visibility into allocation rules, capital flows, and curator fees.
+
+## How It Works
+
+```
+  Curator creates Strategy
+         │
+         ▼
+  ┌─────────────────────────┐
+  │       STRATEGY          │
+  │  ┌──────────────────┐   │
+  │  │ 40% → Project A  │   │         Donor funds Strategy
+  │  │ 35% → Project B  │◀──────────────────────────────────
+  │  │ 20% → Project C  │   │
+  │  │  5% → Curator    │   │
+  │  └──────────────────┘   │
+  └───────────┬─────────────┘
+              │
+         distribute()
+              │
+              ▼
+  ┌─────────────────────────┐
+  │      WAREHOUSE          │         Recipients withdraw
+  │   (holds all funds)     │─────────────────────────────▶
+  └─────────────────────────┘
+```
+
+1. **Create**: Curator deploys a strategy with weighted allocations
+2. **Fund**: Donors send tokens directly to the strategy address (or via ENS name)
+3. **Distribute**: Anyone triggers distribution — funds route to warehouse
+4. **Claim**: Recipients withdraw from warehouse at their convenience
+
+## Value Proposition
+
+| Stakeholder    | Value                                                                               |
+| -------------- | ----------------------------------------------------------------------------------- |
+| **Curators**   | Express allocation intent on-chain. Earn fees. Build verifiable reputation.         |
+| **Donors**     | Fund strategies matching your values. Full transparency. No custody risk.           |
+| **Recipients** | Receive funds from curated strategies. Pull when ready. No action required to earn. |
+| **Ecosystem**  | Auditable marketplace of funding destinations. Composable primitives.               |
+
+## Getting Started
+
+### SDK Setup
+
+The SDK auto-configures based on the connected wallet's chain:
+
+```typescript
+import { CuratorSDK } from "@workspace/sdk";
+
+const sdk = new CuratorSDK(walletClient);
+```
+
+Supported chains: `31337` (Hardhat), `11155111` (Sepolia), `1` (Mainnet — planned).
+
+### Create a Strategy
+
+```typescript
+const { strategy } = await sdk.strategy.create({
+  owner: "0x...",
+  allocations: [
+    { recipient: "0xProjectA...", weight: 40n, label: "Project A" },
+    { recipient: "0xProjectB...", weight: 35n, label: "Project B" },
+    { recipient: "0xProjectC...", weight: 20n, label: "Project C" },
+    { recipient: "0xCurator...", weight: 5n, label: "Curator Fee" },
+  ],
+  metadataURI: "https://...",
+  sourceStrategy: "0x0000...",
+  ensLabel: "my-strategy", // optional — registers my-strategy.support.eth
+});
+```
+
+### Fund and Distribute
+
+```typescript
+// Anyone sends ERC-20 tokens to the strategy address
+await tokenContract.transfer(strategyAddress, amount);
+
+// Anyone triggers distribution
+await sdk.strategy.distribute(strategyAddress, tokenAddress);
+
+// Recipients withdraw from warehouse
+await sdk.warehouse.withdraw(recipientAddress, tokenAddress);
+```
+
+### React Hooks
+
+Wrap your app with `CuratorProvider`, then use hooks:
+
+```tsx
+import { CuratorProvider, useStrategies, useCreateStrategy } from "@workspace/sdk";
+
+function App() {
+  return <CuratorProvider>{/* ... */}</CuratorProvider>;
+}
+
+function StrategiesList() {
+  const { data, isPending } = useStrategies({
+    orderBy: "timesForked",
+    orderDirection: "desc",
+    limit: 10,
+  });
+
+  if (isPending) return <div>Loading...</div>;
+  return data?.items.map(s => <div key={s.id}>{s.metadata?.title}</div>);
+}
+```
+
+## Monorepo Structure
+
+```
+curator/
+├── apps/
+│   ├── web/          # Next.js 16 frontend (@workspace/web)
+│   └── docs/         # Fumadocs documentation site
+├── packages/
+│   ├── contracts/    # Solidity smart contracts — Hardhat (@workspace/contracts)
+│   ├── indexer/      # Ponder event indexer (@workspace/indexer)
+│   ├── sdk/          # TypeScript SDK + React hooks (@workspace/sdk)
+│   └── ui/           # Shared Shadcn UI components (@workspace/ui)
+└── package.json      # pnpm workspaces + Turborepo
+```
+
+## Quick Links
+
+import { Card, Cards } from "fumadocs-ui/components/card";
+
+<Cards>
+  <Card title="Concepts" href="/docs/concepts" description="Mental model — strategies, warehouse, yield, ENS" />
+  <Card title="Architecture" href="/docs/architecture" description="System design, capital flows, security" />
+  <Card title="Requirements" href="/docs/requirements" description="EARS requirements specification" />
+</Cards>
+
+---
+
+<Callout type="info" title="Proof of Concept">
+  This is a proof of concept implementation. See [Status & Roadmap](/docs/status) for production considerations.
+</Callout>

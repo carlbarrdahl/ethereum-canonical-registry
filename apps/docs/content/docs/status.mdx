@@ -1,0 +1,166 @@
+---
+title: Status & Roadmap
+description: POC capabilities, known limitations, and production roadmap
+---
+
+# Status & Roadmap
+
+This document outlines the current proof of concept (POC) status, capabilities, known limitations, and considerations for production deployment.
+
+## POC Capabilities
+
+| Capability | Status |
+|------------|--------|
+| Create strategy with weighted allocations | ✅ Complete |
+| Fund strategies (ERC20 + ETH) | ✅ Complete |
+| Distribute to recipients via warehouse | ✅ Complete |
+| Fork existing strategies | ✅ Complete |
+| ENS subdomain registration | ✅ Complete |
+| Withdraw from warehouse | ✅ Complete |
+| Fund-of-funds (nested strategies) | ✅ Supported |
+| On-chain fee transparency | ✅ Complete |
+| Historical distribution tracking | ✅ Complete |
+| Yield Redirector (ERC-4626) | ✅ Complete |
+
+## Architecture Validation
+
+The POC successfully demonstrates:
+
+### A. Core Curator Studio Flow
+
+1. **Strategy Creation**: Curators can define allocation destinations (EOAs, multisigs, other strategies) with weights
+2. **Non-custodial Capital Flow**: Funds route through the strategy wrapper to SplitsWarehouse
+3. **On-chain Transparency**: All allocation rules, capital flows, and fees are inspectable on-chain
+4. **Functional Interface**: Web UI and SDK enable demonstration and review
+
+### B. Ethereum-Native Design
+
+| Principle | Implementation |
+|-----------|----------------|
+| **Permissionless** | No gatekeepers—anyone can create, fund, distribute |
+| **Composable** | Strategies nest; integrates with Splits ecosystem |
+| **Credibly Neutral** | No admin keys; rules are transparent and immutable |
+| **Auditable** | All state on-chain; indexer provides queryable history |
+
+## Known Limitations
+
+<Callout type="warn" title="Proof of Concept">
+The current implementation prioritizes demonstrating the concept over production hardening.
+</Callout>
+
+### Security Considerations
+
+| Limitation | Risk | Production Solution |
+|------------|------|---------------------|
+| No rebalance timelock | Owner can front-run large donations by rebalancing before distribution | Add 24-48h timelock on allocation changes |
+| No minimum distribution | Gas griefing via tiny distributions | Add `MIN_DISTRIBUTION` threshold (e.g., 0.001 ETH equivalent) |
+| No emergency pause | Cannot halt in case of discovered vulnerability | Add pausable modifier with timelock |
+
+### Token Compatibility
+
+| Token Type | Status |
+|------------|--------|
+| Standard ERC20 tokens | ✅ Supported |
+| Native ETH | ✅ Supported |
+| Fee-on-transfer tokens | ❌ NOT supported |
+| Rebasing tokens | ❌ NOT supported |
+| ERC777 tokens | ⚠️ Untested |
+
+### Yield Redirector Limitations
+
+| Limitation | Risk | Production Solution |
+|------------|------|---------------------|
+| No minimum harvest amount | Dust harvests waste gas | Add `MIN_HARVEST` threshold |
+| No harvest cooldown | Gas griefing via frequent harvests | Add cooldown period (e.g., 1 hour) |
+| External reward tokens | Rewards from source vault not captured | Add reward token harvesting |
+| No emergency withdrawal | Cannot recover in edge cases | Add emergency withdrawal with timelock |
+
+## Implementation Notes
+
+### Rounding Behavior
+
+Rounding dust goes to the last recipient in the allocation list (not lost). This ensures all funds are distributed without accumulating dust in the strategy contract.
+
+### Security Features
+
+- `ReentrancyGuard` protects `distribute()` and `harvest()` functions
+- Custom errors used for gas efficiency
+- `SafeERC20` for all token transfers
+- No external calls before state changes (CEI pattern)
+
+### Gas Efficiency
+
+| Operation | Estimated Gas |
+|-----------|---------------|
+| Create Strategy | ~150,000 |
+| Rebalance (5 allocations) | ~80,000 |
+| Distribute (5 recipients) | ~120,000 |
+| Withdraw from Warehouse | ~50,000 |
+| Create Yield Redirector | ~200,000 |
+| Harvest yield | ~100,000 |
+
+## Production Roadmap
+
+### Phase 1: Security Hardening
+
+- [ ] Add timelock to `rebalance()` function (24-48h delay)
+- [ ] Implement minimum distribution amounts
+- [ ] Add pausable functionality with multisig control
+- [ ] Security audit by reputable firm
+
+### Phase 2: Token Support
+
+- [ ] Add token allowlist or detection for non-standard tokens
+- [ ] Explicit documentation of unsupported token types
+- [ ] Consider wrapper contracts for fee-on-transfer tokens
+
+### Phase 3: Enhanced Governance
+
+- [ ] Integrate with Governor contracts for DAO-controlled strategies
+- [ ] Time-weighted allocation changes
+- [ ] Multi-sig approval for large rebalances
+
+### Phase 4: Yield Redirector Enhancements
+
+- [ ] Minimum harvest thresholds
+- [ ] Harvest cooldown periods
+- [ ] External reward token harvesting
+- [ ] Support for additional vault standards
+
+### Phase 5: Ecosystem Integration
+
+- [ ] Cross-chain deployment (L2s)
+- [ ] Integration with additional distribution mechanisms (Drips streaming)
+- [ ] On-chain reputation/scoring for curators
+
+## Differentiators
+
+| vs. Direct Donations | vs. Grant Programs | vs. Yield Vaults |
+|---------------------|-------------------|------------------|
+| Curator expertise | Permissionless | Public goods focus |
+| Composable allocation | On-chain rules | Non-custodial |
+| Transparent fees | Continuous funding | No yield farming risk |
+
+## Technical Specifications
+
+### Contract Standards
+
+- Solidity ^0.8.20
+- OpenZeppelin Contracts (Upgradeable)
+- EIP-1167 Minimal Proxy Clones
+- ERC-6909 Multi-Token Warehouse
+- ERC-4626 Vault Standard (Yield Redirector)
+- ERC-7528 ETH Address Convention
+
+### Dependencies
+
+- SplitsWarehouse (0xSplits)
+- ENS (Ethereum Name Service)
+- Ponder (Indexer)
+- Viem/Wagmi (SDK)
+
+---
+
+<Callout type="info" title="Grant & Funding Review">
+This documentation is designed to support technical and strategic review for funding discussions. The POC demonstrates core value propositions while clearly documenting the path to production readiness.
+</Callout>

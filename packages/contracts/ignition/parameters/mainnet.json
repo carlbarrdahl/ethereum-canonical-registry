@@ -1,0 +1,12 @@
+{
+  "DeployModuleProduction": {
+    "splitsWarehouse": "0x8fb66F38cF86A3d5e8768f8F1754A24A6c661Fb8",
+    "reverseRegistrar": "0xa58E81fe9b61B5c3fE2AFD33CF304c454AbFc7Cb"
+  },
+  "Registrar": {
+    "nameWrapper": "0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401",
+    "resolver": "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63",
+    "reverseRegistrar": "0xa58E81fe9b61B5c3fE2AFD33CF304c454AbFc7Cb",
+    "parentNode": "TODO: Set namehash of your mainnet domain"
+  }
+}
