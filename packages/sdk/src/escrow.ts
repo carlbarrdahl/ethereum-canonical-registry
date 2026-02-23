@@ -23,7 +23,7 @@ export function createEscrowMethods(
      * Withdraw all funds for a given token from an escrow proxy to its registered owner.
      * Anyone may call — funds always go to the registered owner in the registry.
      */
-    withdrawTo: async (
+    withdraw: async (
       escrowAddress: Address,
       token: Address,
     ): Promise<{ hash: `0x${string}` }> => {
@@ -33,7 +33,7 @@ export function createEscrowMethods(
         abi: escrowAbi,
         client: { public: publicClient, wallet },
       });
-      const hash = await (contract as any).write.withdrawTo([token], {
+      const hash = await (contract as any).write.withdraw([token], {
         account: wallet.account!,
       });
       return writeAndWait(wallet, hash);

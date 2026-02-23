@@ -45,15 +45,16 @@ The contract does not enforce canonicalisation — it hashes whatever strings ar
 Every identifier has a **deterministic deposit address** — a `ClaimableEscrow` proxy derived via CREATE2. The address is:
 
 - **Stable**: computed from the identifier alone, independent of whether the escrow is deployed
-- **Computable offline**: no RPC call required; anyone can derive it from the identifier and registry address
+- **Computable offline**: derivable from the identifier and registry address without an RPC call
 - **Upgrade-safe**: address does not change when the escrow implementation is upgraded via the beacon
 
 Funders send ERC-20 tokens directly to this address. Funds accumulate whether or not the identifier has been claimed.
 
+The SDK handles address derivation internally:
+
 ```typescript
-// Pure local computation
-const id = toId("github", "org/repo");
-const depositAddress = await sdk.registry.predictAddress(id);
+const state = await sdk.registry.resolveIdentifier("github", "org/repo", tokenAddress);
+// state.depositAddress — the deterministic escrow address
 ```
 
 ## Claiming
@@ -113,7 +114,7 @@ The escrow is deployed lazily — automatically when the owner claims, or by any
 
 ```typescript
 // Anyone can trigger withdrawal — funds go to the owner, not the caller
-await sdk.escrow.withdrawTo(escrowAddress, tokenAddress);
+await sdk.escrow.withdraw(escrowAddress, tokenAddress);
 ```
 
 ## Aliases
@@ -137,7 +138,7 @@ Rules:
 
 ## SplitsWarehouse
 
-The **SplitsWarehouse** (from [0xSplits](https://splits.org/)) is an ERC-6909 multi-token vault integrated into `ClaimableEscrow`. When a funder deposits via `warehouse.deposit`, the escrowed balance shows up in the warehouse. `withdrawTo` pulls the warehouse balance out before sending the combined total to the owner.
+The **SplitsWarehouse** (from [0xSplits](https://splits.org/)) is an ERC-6909 multi-token vault integrated into `ClaimableEscrow`. When a funder deposits via `warehouse.deposit`, the escrowed balance shows up in the warehouse. `withdraw` pulls the warehouse balance out before sending the combined total to the owner.
 
 This integration means funders can use Splits' batch deposit infrastructure to fund multiple escrows in one transaction.
 
@@ -158,7 +159,7 @@ const state = await sdk.registry.resolveIdentifier("github", "org/repo", tokenAd
 | Principle | Implementation |
 |---|---|
 | **No prior setup required** | Funders can send tokens before the owner has ever interacted with the protocol |
-| **Permissionless** | Anyone can deploy escrows, send tokens, or call `withdrawTo` |
-| **Non-custodial** | Only the registered owner can receive funds from `withdrawTo` |
+| **Permissionless** | Anyone can deploy escrows, send tokens, or call `withdraw` |
+| **Non-custodial** | Only the registered owner can receive funds from `withdraw` |
 | **Upgradeable** | Beacon pattern allows fixing bugs without changing any deposit address |
 | **Pluggable verification** | Verifiers are swappable per namespace — DNSSEC on-chain verification can replace the oracle model later |

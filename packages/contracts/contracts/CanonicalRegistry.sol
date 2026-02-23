@@ -221,7 +221,7 @@ contract CanonicalRegistry is ICanonicalRegistry, Ownable {
     }
 
     // -------------------------------------------------------------------------
-    // Admin — verifier management
+    // Admin
     // -------------------------------------------------------------------------
 
     /// @notice Register or replace the verifier contract for a namespace.
@@ -230,5 +230,11 @@ contract CanonicalRegistry is ICanonicalRegistry, Ownable {
         bytes32 key = keccak256(bytes(namespace));
         verifiers[key] = verifier;
         emit VerifierUpdated(key, verifier);
+    }
+
+    /// @notice Upgrade the ClaimableEscrow implementation for all proxies.
+    ///         All existing proxy addresses remain unchanged.
+    function upgradeEscrowImplementation(address newImpl) external onlyOwner {
+        beacon.upgradeTo(newImpl);
     }
 }

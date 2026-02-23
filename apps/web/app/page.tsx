@@ -376,7 +376,7 @@ function WithdrawRow({
     if (!sdk) return;
     setIsPending(true);
     try {
-      await sdk.escrow.withdrawTo(state.depositAddress, token);
+      await sdk.escrow.withdraw(state.depositAddress, token);
       toast.success("Withdrawn to owner");
     } catch (e) {
       toast.error((e as Error).message);

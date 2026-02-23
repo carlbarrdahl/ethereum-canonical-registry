@@ -24,13 +24,13 @@ The **Canonical Registry** maps off-chain identifiers (GitHub repositories, DNS 
   CanonicalRegistry records owner
              │
              ▼
-  withdrawTo(token) → funds sent to owner
+  withdraw(token) → funds sent to owner
 ```
 
 1. **Compute**: Anyone derives the deterministic deposit address for any identifier — pure local calculation, no wallet needed
 2. **Fund**: Send ERC-20 tokens directly to the deposit address at any time — before or after claiming
 3. **Claim**: Owner submits a verifiable proof (signed by the oracle backend after GitHub OAuth or DNS TXT check)
-4. **Withdraw**: Anyone calls `withdrawTo(token)` — funds always go to the registered owner
+4. **Withdraw**: Anyone calls `withdraw(token)` — funds always go to the registered owner
 
 ## Value Proposition
 
@@ -52,21 +52,20 @@ const sdk = new CanonicalRegistrySDK(walletClient);
 
 Supported chains: `31337` (Hardhat), `11155111` (Sepolia), `1` (Mainnet — planned).
 
-### Compute a Deposit Address (No RPC Needed)
+### Resolve an Identifier
 
 ```typescript
-import { toId, canonicalise } from "@ethereum-canonical-registry/sdk";
-
-// Deterministic — same result anywhere, no RPC call
-const id = toId("github", canonicalise("org/repo"));
-const depositAddress = await sdk.registry.predictAddress(id);
+const state = await sdk.registry.resolveIdentifier("github", "org/repo", tokenAddress);
+// state.id             — bytes32 identifier
+// state.depositAddress — where funders send tokens
+// state.owner          — null if unclaimed
+// state.balance        — current ERC-20 balance at deposit address
 ```
 
 ### Fund an Identifier
 
 ```typescript
-// Send tokens directly to the deposit address from any wallet
-await tokenContract.transfer(depositAddress, amount);
+await tokenContract.transfer(state.depositAddress, amount);
 ```
 
 ### Claim and Withdraw
@@ -76,8 +75,7 @@ await tokenContract.transfer(depositAddress, amount);
 await sdk.registry.claim("github", "org/repo", proofBytes);
 
 // 2. Withdraw accumulated funds to the registered owner
-const escrowAddress = await sdk.registry.predictAddress(id);
-await sdk.escrow.withdrawTo(escrowAddress, tokenAddress);
+await sdk.escrow.withdraw(state.depositAddress, tokenAddress);
 ```
 
 ### Parse URLs
@@ -85,7 +83,6 @@ await sdk.escrow.withdrawTo(escrowAddress, tokenAddress);
 ```typescript
 import { parseUrl } from "@ethereum-canonical-registry/sdk";
 
-// Accepts GitHub URLs and DNS domains
 parseUrl("https://github.com/org/repo");
 // → { namespace: "github", canonicalString: "org/repo", formatted: "github:org/repo" }
 
@@ -149,5 +146,5 @@ import { Card, Cards } from "fumadocs-ui/components/card";
 ---
 
 <Callout type="info" title="Proof of Concept">
-  This is a proof of concept implementation. See [Status & Roadmap](/docs/status) for production considerations.
+  This is a proof of concept implementation. Contracts are not audited. Do not use in production.
 </Callout>

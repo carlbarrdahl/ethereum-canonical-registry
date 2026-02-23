@@ -8,58 +8,18 @@ Any identifier gets a deterministic deposit address before its owner has ever in
 
 > **Status:** Research and concept stage. Contracts are not audited. Do not use in production.
 
-## Table of Contents
-
-- [Installing the Contracts](#installing-the-contracts)
-- [Installing the SDK](#installing-the-sdk)
-- [Resolving an Identifier](#resolving-an-identifier)
-- [Funding an Identifier](#funding-an-identifier)
-- [Claiming an Identifier](#claiming-an-identifier)
-- [Withdrawing Funds](#withdrawing-funds)
-- [Reading Registry State](#reading-registry-state)
-- [Suggesting a Verifier](#suggesting-a-verifier)
-- [Packages](#packages)
-
-## Installing the Contracts
-
-Install the contracts package to import interfaces and contracts into your Solidity project:
-
-```sh
-npm install @ethereum-canonical-registry/contracts
-```
-
-Then import directly in Solidity:
-
-```solidity
-import {ICanonicalRegistry} from "@ethereum-canonical-registry/contracts/contracts/ICanonicalRegistry.sol";
-import {IVerifier} from "@ethereum-canonical-registry/contracts/contracts/IVerifier.sol";
-```
-
-For Foundry, add a remapping in `remappings.txt`:
-
-```
-@ethereum-canonical-registry/contracts/=node_modules/@ethereum-canonical-registry/contracts/
-```
-
-## Installing the SDK
+## Install
 
 ```sh
 npm install @ethereum-canonical-registry/sdk
 ```
 
-```sh
-pnpm add @ethereum-canonical-registry/sdk
-```
-
-## Resolving an Identifier
-
-`resolveIdentifier` returns the deposit address, owner, and ERC-20 balance for an identifier in a single batched RPC call. It handles canonicalisation and id derivation internally.
+## Resolve an Identifier
 
 ```ts
 import { CanonicalRegistrySDK } from "@ethereum-canonical-registry/sdk";
 
 const sdk = new CanonicalRegistrySDK();
-
 const state = await sdk.registry.resolveIdentifier("github", "org/repo", tokenAddress);
 // state.id             — bytes32 identifier
 // state.depositAddress — where funders should send tokens
@@ -67,31 +27,7 @@ const state = await sdk.registry.resolveIdentifier("github", "org/repo", tokenAd
 // state.balance        — claimable token balance at the deposit address
 ```
 
-Identifiers are `(namespace, string)` pairs. Currently supported namespaces:
-
-| Namespace | Example       | Identifies          |
-| --------- | ------------- | ------------------- |
-| `github`  | `org/repo`    | A GitHub repository |
-| `dns`     | `example.com` | A DNS domain        |
-
-To compute just the bytes32 id or deposit address locally (no RPC):
-
-```ts
-import { toId, resolveDepositAddress } from "@ethereum-canonical-registry/sdk";
-import deployments from "@ethereum-canonical-registry/contracts/deployments.json";
-
-const registryAddress = deployments["1"].CanonicalRegistry.address;
-const id = toId("github", "org/repo");
-
-// Pure local computation — no RPC required
-const depositAddress = resolveDepositAddress(
-  id,
-  registryAddress,
-  deployments.beaconProxyBytecode,
-);
-```
-
-You can also parse a free-form URL:
+Parse a free-form URL:
 
 ```ts
 import { parseUrl, toId } from "@ethereum-canonical-registry/sdk";
@@ -100,110 +36,81 @@ const { namespace, canonicalString } = parseUrl("https://github.com/org/repo");
 const id = toId(namespace, canonicalString);
 ```
 
-## Funding an Identifier
+## Fund an Identifier
 
-No registry interaction is required. Transfer any ERC-20 directly to the deposit address — before or after the identifier is claimed.
+No registry interaction required. Transfer any ERC-20 directly to the deposit address:
 
 ```ts
-// Standard ERC-20 transfer — works with any token
 await token.transfer(state.depositAddress, amount);
 ```
 
-Protocols using Splits Warehouse can also use the deposit address as a normal allocation recipient:
+## Claim an Identifier
+
+Ownership is proven via a namespace-specific verifier. The web API generates signed proofs after off-chain verification.
+
+### GitHub
 
 ```ts
-await warehouse.batchDeposit([state.depositAddress], token, [amount]);
-```
-
-Funds accumulate at the deposit address and become withdrawable once the owner claims.
-
-## Claiming an Identifier
-
-Ownership is proven via a verifier specific to the namespace. Current verifiers use a backend signing service (oracle model) that can be replaced with ZK-based verifiers in the future.
-
-```ts
-import { CanonicalRegistrySDK } from "@ethereum-canonical-registry/sdk";
-import { generateGithubProof } from "@ethereum-canonical-registry/contracts/backend/generateGithubProof";
-
-const sdk = new CanonicalRegistrySDK(walletClient);
-
-// 1. Exchange a GitHub OAuth code for a token, then generate a proof
-const proof = await generateGithubProof({
-  oauthToken,   // access token obtained via GitHub OAuth flow
-  owner,
-  repo,
-  claimant,
-  registryAddress,
-  chainId,
-  signerPrivateKey,
+// 1. Exchange a GitHub OAuth code for a proof
+const res = await fetch("/api/proof/github", {
+  method: "POST",
+  body: JSON.stringify({ code: oauthCode, owner: "org", repo: "repo", claimant: address }),
 });
+const { proof } = await res.json();
 
 // 2. Submit the claim on-chain
-const tx = await sdk.registry.claim("github", "org/repo", proof);
-await tx.wait();
+await sdk.registry.claim("github", "org/repo", proof);
 ```
 
-The web app handles the OAuth flow automatically at `/api/auth/github` — users connect with GitHub, select a repository, and the backend verifies admin access using the OAuth token before signing the proof.
+### DNS
+
+```ts
+// 1. Set a TXT record: _eth-canonical.example.com → 0xYourAddress
+// 2. Request a proof from the API
+const res = await fetch("/api/proof/dns", {
+  method: "POST",
+  body: JSON.stringify({ domain: "example.com", claimant: address }),
+});
+const { proof } = await res.json();
+
+// 3. Submit the claim on-chain
+await sdk.registry.claim("dns", "example.com", proof);
+```
 
 On success, the registry records `owner[id] = msg.sender` and deploys the escrow proxy at the deposit address.
 
-## Withdrawing Funds
+## Withdraw Funds
 
-Once an identifier is claimed, pull all accumulated funds to the registered owner:
-
-```ts
-const tx = await sdk.escrow.withdrawTo(depositAddress, tokenAddress);
-await tx.wait();
-```
-
-Anyone can call `withdrawTo` — funds always go to the registered owner, not the caller. This lets a frontend or keeper sweep on the owner's behalf.
-
-## Reading Registry State
-
-Use `resolveIdentifier` for the full state, or call individual methods as needed:
+Once claimed, pull all accumulated funds to the registered owner:
 
 ```ts
-// Full state in one call
-const state = await sdk.registry.resolveIdentifier("github", "org/repo", tokenAddress);
-
-// Or just the owner
-const owner = await sdk.registry.ownerOf(id);
-
-// Or just the deposit address
-const depositAddress = await sdk.registry.predictAddress(id);
+await sdk.escrow.withdraw(state.depositAddress, tokenAddress);
 ```
 
-For on-chain contracts, the minimal interface is:
+Anyone can call `withdraw` — funds always go to the registered owner, not the caller.
+
+## On-Chain Integration
 
 ```solidity
-interface ICanonicalRegistry {
-    function ownerOf(bytes32 id) external view returns (address);
-}
+import {ICanonicalRegistry} from "@ethereum-canonical-registry/contracts/contracts/ICanonicalRegistry.sol";
+
+bytes32 id = keccak256(abi.encode("github", "org/repo"));
+address owner = ICanonicalRegistry(registry).ownerOf(id);
 ```
 
-## Suggesting a Verifier
-
-Have an off-chain identity or platform that should be addressable on-chain? Suggestions for new namespaces and verifiers are welcome — [open an issue](https://github.com/ethereum-canonical-registry/ethereum-canonical-registry/issues/new) using the template below.
-
-```markdown
-**Namespace:** e.g. `npm`, `twitter`, `orcid`
-**Identifies:** e.g. npm packages, Twitter accounts, researcher profiles
-**Ownership signal:** how an owner proves control (OAuth scope, DNS record, file in repo, etc.)
-**Verification approach:** oracle-signed, DNSSEC, ZK proof, on-chain attestation, other
-**Links:** any prior art or relevant specs
-```
+`ownerOf` resolves through aliases transparently.
 
 ## Packages
 
 ```
 packages/
   contracts/   — Solidity contracts (CanonicalRegistry, ClaimableEscrow, verifiers)
-  sdk/         — TypeScript SDK for interacting with the registry
-  indexer/     — Ponder indexer for off-chain query support
-  ui/          — Shared UI component library
+  sdk/         — TypeScript SDK + React hooks
+  indexer/     — Ponder event indexer
+  ui/          — Shared Shadcn UI components
 apps/
-  web/         — Frontend app
+  web/         — Next.js frontend
   docs/        — Documentation site
 ```
 
-See [PROTOCOL.md](./PROTOCOL.md) for a full description of the protocol design, trust model, security considerations, and integration guide.
+See [PROTOCOL.md](./PROTOCOL.md) for the full protocol design, trust model, security considerations, and integration guide.

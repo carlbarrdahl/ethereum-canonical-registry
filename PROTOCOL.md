@@ -33,15 +33,14 @@ Normalization rules (lowercase, trailing slashes, etc.) are namespace-specific a
 
 ## Deterministic addresses
 
-Every identifier has a corresponding Ethereum address derived deterministically using CREATE2. This address can be computed by anyone — no on-chain call required — from the identifier, the registry address, and the beacon address.
+Every identifier has a corresponding Ethereum address derived deterministically using CREATE2. This address can be computed by anyone — no on-chain call required — from the identifier and the registry address.
 
 ```ts
-const id = toId("github", "org/repo");
-const depositAddress = resolveDepositAddress(
-  id,
-  registryAddress,
-  beaconAddress,
-);
+import { CanonicalRegistrySDK } from "@ethereum-canonical-registry/sdk";
+
+const sdk = new CanonicalRegistrySDK();
+const state = await sdk.registry.resolveIdentifier("github", "org/repo", tokenAddress);
+// state.depositAddress — where funders should send tokens
 ```
 
 This address is where funds accumulate. Any ERC-20 transfer to this address is held in the escrow until the identifier is claimed. A `ClaimableEscrow` proxy is deployed at this address when the identifier is first claimed.
@@ -52,14 +51,14 @@ The key property: **a protocol can address any identifier and deposit funds to i
 
 Each escrow is deployed as a `BeaconProxy` pointing to an `UpgradeableBeacon` managed by the registry. The proxy bytecode and constructor args are deterministic per identifier, so the deposit address is stable and predictable.
 
-If a bug is found in the escrow logic, the implementation can be upgraded via the beacon. All existing proxy addresses remain unchanged — only the delegated logic behind them changes. This avoids the problem where patching the escrow would break all future address derivations.
+If a bug is found in the escrow logic, the registry admin can upgrade the implementation via `upgradeEscrowImplementation(newImpl)`. All existing proxy addresses remain unchanged — only the delegated logic behind them changes.
 
-The escrow implementation handles two funding paths in a single `withdrawTo` call:
+The escrow implementation handles two funding paths in a single `withdraw` call:
 
 1. **Direct ERC-20 transfers** — any `token.transfer(depositAddress, amount)` is held in the escrow contract's own balance.
 2. **Splits Warehouse deposits** — protocols that call `warehouse.deposit(depositAddress, token, amount)` or `warehouse.batchDeposit` accumulate a warehouse balance under the deposit address.
 
-`withdrawTo` pulls the warehouse balance to the escrow first, then transfers the combined total to the registered owner. Both funding paths work simultaneously with no configuration required.
+`withdraw` pulls the warehouse balance to the escrow first, then transfers the combined total to the registered owner. Both funding paths work simultaneously with no configuration required.
 
 ## Claiming ownership
 
@@ -88,18 +87,17 @@ interface IVerifier {
 
 Verifiers are swappable per namespace without changing the registry. The oracle-based verifiers can be replaced with ZK-based verifiers (e.g. vlayer, TLSNotary) as that tooling matures.
 
-All oracle proofs use EIP-712 typed data signatures. The domain separator includes `chainId` and `verifyingContract` (the registry address), preventing both cross-chain and cross-deployment replay.
+All oracle proofs use EIP-712 typed data signatures. The domain separator includes `chainId` and the registry address, preventing both cross-chain and cross-deployment replay.
 
 ## Withdrawing funds
 
-Once an identifier is claimed, the registered owner calls `withdrawTo` on the escrow proxy. Funds held at the escrow address are transferred to the owner's address.
+Once an identifier is claimed, anyone can call `withdraw` on the escrow proxy. Funds held at the escrow address are transferred to the registered owner's address.
 
 ```ts
-const escrow = new Contract(depositAddress, escrowABI, signer);
-await escrow.withdrawTo(tokenAddress);
+await sdk.escrow.withdraw(depositAddress, tokenAddress);
 ```
 
-Anyone can call `withdrawTo` — funds always go to the registered owner, not to the caller.
+Anyone can call `withdraw` — funds always go to the registered owner, not to the caller.
 
 ## Revocation
 
@@ -118,14 +116,14 @@ Funds remain at the same escrow address and will be claimable by whoever claims 
 A project may have multiple identifiers (`github:org/repo`, `dns:example.com`). These are separate by default with separate deposit addresses. The owner can link them after claiming both:
 
 ```ts
-await registry.linkIds(primaryId, [aliasId1, aliasId2]);
+await sdk.registry.linkIds(primaryId, [aliasId1, aliasId2]);
 ```
 
 Linked aliases resolve to the primary's owner. Funds in each escrow remain separate but both withdraw to the same address. Aliases can be unlinked with `unlinkIds`.
 
 ## Trust model
 
-The registry contract itself has no privileged operators and holds no funds. The trust assumptions are in the verifiers:
+The registry contract itself has no privileged operators beyond the admin key (which controls `setVerifier` and `upgradeEscrowImplementation`). It holds no funds. The trust assumptions are in the verifiers:
 
 - **Oracle verifiers** (current): you trust the backend signing service checked ownership correctly. The signing key can be rotated; the service can be replaced by upgrading the verifier contract.
 - **ZK verifiers** (future): ownership is proven cryptographically on-chain. No trust assumption beyond the proof system.
@@ -138,7 +136,7 @@ For DNS domains, a fully trustless path already exists via DNSSEC (used by ENS).
 - **Identifier collisions**: `abi.encode` (length-prefixed) prevents collisions between different namespace/string pairs that produce the same packed concatenation.
 - **Normalization**: rules are namespace-specific and enforced by verifiers, not globally by the contract. Future namespaces may be case-sensitive.
 - **Oracle key compromise**: a compromised signing key allows claiming any unclaimed identifier in all namespaces sharing that verifier. Mitigation: HSM for key storage, key rotation via `setTrustedSigner`, and a defined upgrade path to ZK verifiers.
-- **Escrow upgradeability**: the beacon is owned by the registry contract. Implementation upgrades require the registry admin key.
+- **Escrow upgradeability**: the beacon is owned by the registry contract. Implementation upgrades are gated by `onlyOwner` via `upgradeEscrowImplementation`.
 - **No ownership transfer**: there is no `transferOwnership` function. The only way to change the associated address is to revoke and re-claim with a fresh proof. This is intentional — it ties the registered address to the actual identity owner at claim time — but it means wallet rotation requires a new verification round-trip.
 
 ## Design trade-offs
@@ -164,14 +162,10 @@ This differs from ENS, which requires the owner to register before the name reso
 You don't need to know the registry exists. Compute the deposit address for any identifier and transfer tokens directly to it — before or after the identifier is claimed.
 
 ```ts
-import { toId, resolveDepositAddress } from "@eth-canonical-registry/sdk";
+import { CanonicalRegistrySDK } from "@ethereum-canonical-registry/sdk";
 
-const id = toId("github", "org/repo");
-const depositAddress = resolveDepositAddress(
-  id,
-  REGISTRY_ADDRESS,
-  BEACON_ADDRESS,
-);
+const sdk = new CanonicalRegistrySDK();
+const { depositAddress } = await sdk.registry.resolveIdentifier("github", "org/repo", tokenAddress);
 
 // Standard ERC-20 transfer — no registry interaction required
 await token.transfer(depositAddress, amount);
@@ -208,21 +202,20 @@ if (owner != address(0)) {
 
 ### As the identifier owner (claiming and withdrawing)
 
-1. **Generate a proof** via the backend signing service for your namespace (GitHub OAuth or DNS TXT record).
+1. **Generate a proof** via the web API for your namespace (GitHub OAuth or DNS TXT record).
 2. **Claim** — submits the proof on-chain and deploys the escrow proxy:
 
 ```ts
-const proof = await generateGithubProof({ accessToken, owner, repo, claimant, ... })
-await registry.claim("github", "org/repo", proof)
+await sdk.registry.claim("github", "org/repo", proof);
 ```
 
 3. **Withdraw** — pulls all accumulated funds from the escrow to your address:
 
 ```ts
-await escrow.withdrawTo(tokenAddress);
+await sdk.escrow.withdraw(depositAddress, tokenAddress);
 ```
 
-Anyone can trigger `withdrawTo` — funds always go to the registered owner, not the caller. This means a frontend or keeper can sweep on the owner's behalf.
+Anyone can trigger `withdraw` — funds always go to the registered owner, not the caller. This means a frontend or keeper can sweep on the owner's behalf.
 
 ### Splits Warehouse integration
 
@@ -232,7 +225,7 @@ Any protocol that routes funds via Splits Warehouse can use deposit addresses as
 Funder → warehouse.batchDeposit([escrowAddress, ...], token, amounts)
            → escrow accumulates warehouse balance
            → owner claims registry identifier
-           → escrow.withdrawTo(token)
+           → escrow.withdraw(token)
                pulls warehouse balance + any direct transfers → owner
 ```
 
@@ -257,13 +250,13 @@ Any `verify` implementation is valid — oracle-signed, ZK proof, on-chain attes
 
 - **ENS**: maps human-readable names to addresses. This registry maps entity identifiers (repos, domains) to addresses. Complementary — an ENS name can resolve to a registry deposit address.
 - **EAS**: the natural long-term storage layer for ownership attestations. The current design stores ownership in a simple mapping for self-containment; migrating to EAS as the canonical source of truth is a defined future direction.
-- **Splits**: every deposit address is a first-class Splits Warehouse recipient. The escrow implementation handles both `warehouse.batchDeposit` (used by Splits-native protocols) and direct ERC-20 transfers in a single `withdrawTo` call.
+- **Splits**: every deposit address is a first-class Splits Warehouse recipient. The escrow implementation handles both `warehouse.batchDeposit` (used by Splits-native protocols) and direct ERC-20 transfers in a single `withdraw` call.
 - **Drips Network**: maps GitHub repositories to addresses with pre-funding support. Uses an oracle to read `FUNDING.json` from repos. This registry generalises the same idea across namespaces with a pluggable verifier interface and a defined path toward trustless verification.
 
 ## Source layout
 
 ```
-src/
+packages/contracts/contracts/
   CanonicalRegistry.sol       — registry contract (ownership, linking, beacon)
   ClaimableEscrow.sol         — escrow implementation (initializable, behind BeaconProxy)
   IVerifier.sol               — verifier interface
@@ -273,12 +266,6 @@ src/
     VerifierOracle.sol        — base: EIP-712 oracle-signed proofs
     VerifierGitHub.sol        — GitHub OAuth verifier
     VerifierDns.sol           — DNS TXT record verifier
-  backend/
-    signProof.ts              — shared EIP-712 proof signing
-    generateGithubProof.ts    — GitHub OAuth check + proof
-    generateDnsProof.ts       — DNS TXT resolution + proof
-  frontend/
-    registry.ts               — read/write helpers for frontend clients
 ```
 
 ## Status

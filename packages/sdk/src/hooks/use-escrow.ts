@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import type { Address } from "viem";
 import { useInvalidate } from "./utils";
 
-export function useWithdrawTo(
+export function useWithdraw(
   opts?: UseMutationOptions<
     { hash: `0x${string}` },
     Error,
@@ -25,7 +25,7 @@ export function useWithdrawTo(
       token: Address;
     }) => {
       if (!sdk) throw new Error("SDK not initialized");
-      return sdk.escrow.withdrawTo(escrowAddress, token);
+      return sdk.escrow.withdraw(escrowAddress, token);
     },
     onSuccess: (data, variables, ...args) => {
       toast.success("Withdrawal successful");

@@ -13,7 +13,7 @@ import {ICanonicalRegistry} from "./ICanonicalRegistry.sol";
 ///         The proxy address is deterministic, so funders can deposit before the
 ///         identifier is claimed — either by transferring ERC-20 directly to this
 ///         address, or via the Splits Warehouse using this address as the recipient.
-///         Once claimed, the registered owner calls `withdrawTo` to pull funds out.
+///         Once claimed, the registered owner calls `withdraw` to pull funds out.
 ///
 /// @dev    Deployed behind a BeaconProxy by CanonicalRegistry.
 ///         The warehouse address is set as immutable in the implementation constructor
@@ -47,7 +47,7 @@ contract ClaimableEscrow is Initializable {
     ///         and direct ERC-20 transfers to this address.
     ///         Anyone may call; funds always go to the address registered in the registry.
     /// @param token ERC-20 token address to withdraw.
-    function withdrawTo(address token) external {
+    function withdraw(address token) external {
         address owner = registry.ownerOf(id);
         require(owner != address(0), "ClaimableEscrow: not yet claimed");
 
