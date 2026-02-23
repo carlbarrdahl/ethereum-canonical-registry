@@ -1,6 +1,6 @@
 # Ethereum Canonical Registry
 
-[![CI](https://github.com/ethereum-canonical-registry/ethereum-canonical-registry/actions/workflows/ci.yml/badge.svg)](https://github.com/ethereum-canonical-registry/ethereum-canonical-registry/actions/workflows/ci.yml)
+[![CI](https://github.com/carlbarrdahl/ethereum-canonical-registry/actions/workflows/ci.yml/badge.svg)](https://github.com/carlbarrdahl/ethereum-canonical-registry/actions/workflows/ci.yml)
 
 A shared on-chain registry that maps off-chain identifiers (GitHub repos, DNS domains) to Ethereum addresses — deployed once per chain, readable by any protocol.
 
@@ -74,12 +74,21 @@ Identifiers are `(namespace, string)` pairs. Currently supported namespaces:
 | `github`  | `org/repo`    | A GitHub repository |
 | `dns`     | `example.com` | A DNS domain        |
 
-To compute just the bytes32 id locally (no RPC):
+To compute just the bytes32 id or deposit address locally (no RPC):
 
 ```ts
-import { toId } from "@ethereum-canonical-registry/sdk";
+import { toId, resolveDepositAddress } from "@ethereum-canonical-registry/sdk";
+import deployments from "@ethereum-canonical-registry/contracts/deployments.json";
 
+const registryAddress = deployments["1"].CanonicalRegistry.address;
 const id = toId("github", "org/repo");
+
+// Pure local computation — no RPC required
+const depositAddress = resolveDepositAddress(
+  id,
+  registryAddress,
+  deployments.beaconProxyBytecode,
+);
 ```
 
 You can also parse a free-form URL:
@@ -114,16 +123,27 @@ Ownership is proven via a verifier specific to the namespace. Current verifiers 
 
 ```ts
 import { CanonicalRegistrySDK } from "@ethereum-canonical-registry/sdk";
+import { generateGithubProof } from "@ethereum-canonical-registry/contracts/backend/generateGithubProof";
 
 const sdk = new CanonicalRegistrySDK(walletClient);
 
-// 1. Generate a proof via the backend for your namespace
-const proof = await generateGithubProof({ accessToken, owner, repo, claimant });
+// 1. Exchange a GitHub OAuth code for a token, then generate a proof
+const proof = await generateGithubProof({
+  oauthToken,   // access token obtained via GitHub OAuth flow
+  owner,
+  repo,
+  claimant,
+  registryAddress,
+  chainId,
+  signerPrivateKey,
+});
 
 // 2. Submit the claim on-chain
 const tx = await sdk.registry.claim("github", "org/repo", proof);
 await tx.wait();
 ```
+
+The web app handles the OAuth flow automatically at `/api/auth/github` — users connect with GitHub, select a repository, and the backend verifies admin access using the OAuth token before signing the proof.
 
 On success, the registry records `owner[id] = msg.sender` and deploys the escrow proxy at the deposit address.
 

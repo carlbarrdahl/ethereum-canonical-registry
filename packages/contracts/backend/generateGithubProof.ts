@@ -2,13 +2,13 @@ import { signProof } from "./signProof"
 
 const GITHUB_NAME_RE = /^[a-zA-Z0-9._-]+$/
 
-async function isRepoAdmin(accessToken: string, owner: string, repo: string): Promise<boolean> {
+async function isRepoAdmin(oauthToken: string, owner: string, repo: string): Promise<boolean> {
   if (!GITHUB_NAME_RE.test(owner) || !GITHUB_NAME_RE.test(repo)) {
     throw new Error(`Invalid GitHub owner or repo name: "${owner}/${repo}"`)
   }
 
   const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: { Authorization: `Bearer ${oauthToken}` },
   })
 
   if (!res.ok) {
@@ -20,7 +20,7 @@ async function isRepoAdmin(accessToken: string, owner: string, repo: string): Pr
 }
 
 export async function generateGithubProof(params: {
-  accessToken: string
+  oauthToken: string
   owner: string
   repo: string
   claimant: string
@@ -28,11 +28,11 @@ export async function generateGithubProof(params: {
   chainId: number
   signerPrivateKey: string
 }): Promise<string> {
-  const { accessToken, owner, repo, claimant, registryAddress, chainId, signerPrivateKey } = params
+  const { oauthToken, owner, repo, claimant, registryAddress, chainId, signerPrivateKey } = params
 
   const canonicalString = `${owner.toLowerCase()}/${repo.toLowerCase()}`
 
-  if (!await isRepoAdmin(accessToken, owner, repo)) {
+  if (!await isRepoAdmin(oauthToken, owner, repo)) {
     throw new Error(`${claimant} is not an admin of ${canonicalString}`)
   }
 

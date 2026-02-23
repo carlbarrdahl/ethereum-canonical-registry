@@ -73,7 +73,10 @@ export class CanonicalRegistrySDK {
     this.registry = createRegistryMethods(
       wallet,
       this.#public,
-      this.#deployments,
+      {
+        ...this.#deployments,
+        beaconProxyBytecode: deployments.beaconProxyBytecode,
+      },
     );
     this.escrow = createEscrowMethods(wallet, this.#public, this.#deployments);
     this.warehouse = createWarehouseMethods(

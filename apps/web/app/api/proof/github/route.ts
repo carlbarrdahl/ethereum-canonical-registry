@@ -1,31 +1,12 @@
 import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
-import { signProof } from "@/lib/signProof"
-
-const GITHUB_NAME_RE = /^[a-zA-Z0-9._-]+$/
-
-async function isRepoAdmin(accessToken: string, owner: string, repo: string): Promise<boolean> {
-  if (!GITHUB_NAME_RE.test(owner) || !GITHUB_NAME_RE.test(repo)) {
-    throw new Error(`Invalid GitHub owner or repo name: "${owner}/${repo}"`)
-  }
-
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
-
-  if (!res.ok) {
-    throw new Error(`GitHub API error: ${res.status} ${res.statusText}`)
-  }
-
-  const data = await res.json()
-  return data.permissions?.admin === true
-}
+import { generateGithubProof } from "@ethereum-canonical-registry/contracts/backend/generateGithubProof"
 
 export async function POST(request: Request): Promise<NextResponse> {
   const cookieStore = await cookies()
-  const accessToken = cookieStore.get("gh_access_token")?.value
+  const oauthToken = cookieStore.get("gh_access_token")?.value
 
-  if (!accessToken) {
+  if (!oauthToken) {
     return NextResponse.json({ error: "Not authenticated with GitHub" }, { status: 401 })
   }
 
@@ -37,18 +18,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   try {
-    const canonicalString = `${owner.toLowerCase()}/${repo.toLowerCase()}`
-
-    if (!await isRepoAdmin(accessToken, owner, repo)) {
-      return NextResponse.json(
-        { error: `${claimant} is not an admin of ${canonicalString}` },
-        { status: 403 }
-      )
-    }
-
-    const proof = await signProof({
-      namespace: "github",
-      canonicalString,
+    const proof = await generateGithubProof({
+      oauthToken,
+      owner,
+      repo,
       claimant,
       registryAddress,
       chainId,

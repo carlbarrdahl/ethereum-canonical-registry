@@ -11,7 +11,9 @@ type ContractEntry = {
 
 type ContractsByName = Record<string, ContractEntry>;
 
-type DeploymentsOutput = Record<string, ContractsByName>;
+type DeploymentsOutput = Record<string, ContractsByName> & {
+  beaconProxyBytecode?: string;
+};
 
 type DeploymentMetadata = {
   blockNumber?: number;
@@ -111,6 +113,45 @@ async function discoverChainDirectories(
   return entries
     .filter((e) => e.isDirectory())
     .map((e) => path.join(deploymentsRoot, e.name));
+}
+
+/**
+ * Scan the hardhat build-info directory for the BeaconProxy creation bytecode.
+ * Returns the hex bytecode string (without 0x prefix), or null if not found.
+ */
+async function findBeaconProxyBytecode(
+  repoRoot: string
+): Promise<string | null> {
+  const buildInfoDir = path.join(
+    repoRoot,
+    "packages",
+    "contracts",
+    "artifacts",
+    "build-info"
+  );
+  if (!(await pathExists(buildInfoDir))) return null;
+
+  const entries = await fs.readdir(buildInfoDir);
+  const outputFiles = entries.filter((e) => e.endsWith(".output.json"));
+
+  for (const file of outputFiles) {
+    try {
+      const data = await readJson<{
+        output?: { contracts?: Record<string, Record<string, { evm?: { bytecode?: { object?: string } } }>> };
+      }>(path.join(buildInfoDir, file));
+
+      const contracts = data?.output?.contracts ?? {};
+      for (const contractMap of Object.values(contracts)) {
+        const bp = contractMap["BeaconProxy"];
+        const bytecode = bp?.evm?.bytecode?.object;
+        if (bytecode && bytecode.length > 0) return bytecode;
+      }
+    } catch {
+      // ignore malformed files
+    }
+  }
+
+  return null;
 }
 
 async function collectContractsForChain(
@@ -232,6 +273,11 @@ async function main(): Promise<void> {
   }
 
   const chainDirs = await discoverChainDirectories(deploymentsRoot);
+  const beaconProxyBytecode = await findBeaconProxyBytecode(repoRoot);
+  if (!beaconProxyBytecode) {
+    console.warn("Warning: BeaconProxy bytecode not found in build-info; run `hardhat compile` first.");
+  }
+
   const output: DeploymentsOutput = {};
 
   for (const chainDir of chainDirs) {
@@ -240,6 +286,10 @@ async function main(): Promise<void> {
     const { chainId, contracts } = result;
     if (Object.keys(contracts).length === 0) continue;
     output[String(chainId)] = contracts;
+  }
+
+  if (beaconProxyBytecode) {
+    output.beaconProxyBytecode = beaconProxyBytecode;
   }
 
   if (Object.keys(output).length === 0) {

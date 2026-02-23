@@ -2,7 +2,11 @@ import {
   keccak256,
   encodeAbiParameters,
   parseAbiParameters,
+  encodeFunctionData,
+  getContractAddress,
+  concat,
   type Hex,
+  type Address,
 } from "viem";
 
 // ============================================================================
@@ -132,4 +136,72 @@ export function parseUrl(input: string): ParsedUrl {
   }
 
   throw new Error(`Cannot determine namespace for "${input}"`);
+}
+
+// ============================================================================
+// Deposit address derivation (no RPC required)
+// ============================================================================
+
+/**
+ * Derive the beacon address from the registry address.
+ *
+ * The beacon is deployed with `new UpgradeableBeacon(...)` as the first
+ * contract created in the CanonicalRegistry constructor. Per EIP-161, a new
+ * contract starts with nonce=1, so the beacon address is the CREATE address
+ * of (registryAddress, nonce=1).
+ *
+ * This is a pure local computation — no RPC call required.
+ */
+export function deriveBeaconAddress(registryAddress: Address): Address {
+  return getContractAddress({ opcode: "CREATE", from: registryAddress, nonce: 1n });
+}
+
+/**
+ * Compute the deterministic deposit address for any identifier.
+ * This is a pure local computation — no RPC call required.
+ *
+ * The address is stable whether or not the escrow proxy has been deployed,
+ * and does NOT change if the escrow implementation is upgraded via the beacon.
+ *
+ * @param id               bytes32 identifier from toId()
+ * @param registryAddress  deployed CanonicalRegistry address
+ * @param beaconProxyBytecode  creation bytecode of OpenZeppelin BeaconProxy
+ *                             (available as deployments.beaconProxyBytecode)
+ */
+export function resolveDepositAddress(
+  id: Hex,
+  registryAddress: Address,
+  beaconProxyBytecode: Hex,
+): Address {
+  const beaconAddress = deriveBeaconAddress(registryAddress);
+
+  const initializeCalldata = encodeFunctionData({
+    abi: [
+      {
+        name: "initialize",
+        type: "function",
+        inputs: [
+          { name: "registry_", type: "address" },
+          { name: "id_", type: "bytes32" },
+        ],
+      },
+    ],
+    functionName: "initialize",
+    args: [registryAddress, id],
+  });
+
+  const constructorArgs = encodeAbiParameters(
+    parseAbiParameters("address, bytes"),
+    [beaconAddress, initializeCalldata],
+  );
+
+  const initcode = concat([beaconProxyBytecode, constructorArgs]);
+  const initcodeHash = keccak256(initcode);
+
+  return getContractAddress({
+    opcode: "CREATE2",
+    from: registryAddress,
+    salt: id,
+    bytecodeHash: initcodeHash,
+  });
 }

@@ -5,8 +5,6 @@ export async function GET() {
   const cookieStore = await cookies()
   const token = cookieStore.get("gh_access_token")?.value
 
-
-  console.log({token})
   if (!token) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
   }

@@ -4,10 +4,12 @@
   "type": "module",
   "files": [
     "contracts",
+    "backend",
     "deployments.json"
   ],
   "exports": {
     "./contracts/*": "./contracts/*",
+    "./backend/*": "./backend/*",
     "./deployments.json": "./deployments.json"
   },
   "scripts": {

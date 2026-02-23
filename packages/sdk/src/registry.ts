@@ -7,7 +7,7 @@ import {
   zeroAddress,
 } from "viem";
 import { writeAndWait } from "./lib/tx";
-import { canonicalise, toId } from "./utils";
+import { canonicalise, toId, resolveDepositAddress } from "./utils";
 
 export type IdentifierState = {
   id: `0x${string}`;
@@ -18,6 +18,7 @@ export type IdentifierState = {
 
 type ChainDeployments = {
   CanonicalRegistry: { address: string; abi: unknown };
+  beaconProxyBytecode?: string;
 };
 
 export function createRegistryMethods(
@@ -26,6 +27,7 @@ export function createRegistryMethods(
   deployments: ChainDeployments,
 ) {
   const registryAddress = deployments.CanonicalRegistry.address as Address;
+  const beaconProxyBytecode = (deployments.beaconProxyBytecode ?? "") as `0x${string}`;
   const registryAbi = deployments.CanonicalRegistry.abi as Abi;
 
   function getRegistryContract() {
@@ -200,11 +202,13 @@ export function createRegistryMethods(
       const cs = canonicalise(rawCanonicalString);
       const id = toId(namespace, cs);
 
-      const registryContract = getContract({
-        address: registryAddress,
-        abi: registryAbi,
-        client: { public: publicClient },
-      });
+      const depositAddress: Address = beaconProxyBytecode
+        ? resolveDepositAddress(id, registryAddress, beaconProxyBytecode)
+        : await (getContract({
+            address: registryAddress,
+            abi: registryAbi,
+            client: { public: publicClient },
+          }) as any).read.predictAddress([id]);
 
       const erc20Abi = [
         {
@@ -216,7 +220,11 @@ export function createRegistryMethods(
         },
       ] as const;
 
-      const depositAddress: Address = await (registryContract as any).read.predictAddress([id]);
+      const registryContract = getContract({
+        address: registryAddress,
+        abi: registryAbi,
+        client: { public: publicClient },
+      });
 
       const [ownerRaw, balance] = await Promise.all([
         (registryContract as any).read.ownerOf([id]) as Promise<Address>,
