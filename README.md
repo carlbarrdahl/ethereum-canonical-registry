@@ -4,9 +4,11 @@
 
 A shared on-chain registry that maps off-chain identifiers (GitHub repos, DNS domains) to Ethereum addresses — deployed once per chain, readable by any protocol.
 
-Any identifier gets a deterministic deposit address before its owner has ever interacted with Ethereum. Funds accumulate there until the owner claims ownership and withdraws.
+Every identifier gets a deterministic deposit address before its owner has ever interacted with Ethereum. Funds accumulate there until the owner claims and withdraws.
 
-> **Status:** Research and concept stage. Contracts are not audited. Do not use in production.
+> **Status:** Research prototype. Contracts are not audited. Do not use in production.
+
+See [OVERVIEW.md](./OVERVIEW.md) for the problem statement, design rationale, and comparisons with ENS, Drips, and EAS. See [spec.md](./spec.md) for the full research paper.
 
 ## Install
 
@@ -21,19 +23,17 @@ import { CanonicalRegistrySDK } from "@ethereum-canonical-registry/sdk";
 
 const sdk = new CanonicalRegistrySDK();
 
-// Without token — just owner and deposit address
 const state = await sdk.registry.resolveIdentifier("github", "org/repo");
 // state.id             — bytes32 identifier
 // state.depositAddress — where funders should send tokens
 // state.owner          — null if unclaimed
-// state.balance        — null
 
-// With token — also fetches the claimable balance
+// Pass a token address to also fetch the claimable balance
 const state = await sdk.registry.resolveIdentifier("github", "org/repo", tokenAddress);
 // state.balance        — claimable token balance at the deposit address
 ```
 
-Parse a free-form URL:
+### Parse URLs
 
 ```ts
 import { parseUrl, toId } from "@ethereum-canonical-registry/sdk";
@@ -44,7 +44,7 @@ const id = toId(namespace, canonicalString);
 
 ## Fund an Identifier
 
-No registry interaction required. Transfer any ERC-20 directly to the deposit address:
+Transfer any ERC-20 directly to the deposit address — no registry interaction required:
 
 ```ts
 await token.transfer(state.depositAddress, amount);
@@ -52,16 +52,15 @@ await token.transfer(state.depositAddress, amount);
 
 ## Claim an Identifier
 
-Ownership is proven via a namespace-specific verifier. The web app's claim gateway handles verification and returns a signed proof.
+Ownership is proven via a namespace-specific verifier. The web app handles verification and returns a signed proof.
 
 ### GitHub
 
 ```ts
-// 1. Redirect the user to the claim gateway (handles OAuth flow)
+// 1. Redirect the user to the claim gateway (handles OAuth)
 window.location.href = `/claim/github?owner=org&repo=repo&claimant=${address}`;
 
-// 2. After OAuth, the gateway redirects back with the proof:
-//    /claim/github/callback?proof=0x...
+// 2. After OAuth, the gateway redirects back with the proof
 const proof = new URLSearchParams(window.location.search).get("proof");
 
 // 3. Submit the claim on-chain
@@ -71,10 +70,9 @@ await sdk.registry.claim("github", "org/repo", proof);
 ### DNS
 
 ```ts
-// 1. Add a TXT record to your domain:
-//    _eth-canonical.example.com → "0xYourAddress"
+// 1. Add a TXT record: _eth-canonical.example.com → "0xYourAddress"
 
-// 2. Request a proof (the API resolves the TXT record and signs it)
+// 2. Request a proof
 const res = await fetch("/api/proof/dns", {
   method: "POST",
   body: JSON.stringify({ domain: "example.com", claimant: address }),
@@ -84,8 +82,6 @@ const { proof } = await res.json();
 // 3. Submit the claim on-chain
 await sdk.registry.claim("dns", "example.com", proof);
 ```
-
-On success, the registry records `owner[id] = msg.sender` and deploys the escrow proxy at the deposit address.
 
 ## Withdraw Funds
 
@@ -108,6 +104,32 @@ address owner = ICanonicalRegistry(registry).ownerOf(id);
 
 `ownerOf` resolves through aliases transparently.
 
+## React Hooks
+
+```tsx
+import {
+  CanonicalRegistryProvider,
+  useIdentifier,
+  useClaim,
+} from "@ethereum-canonical-registry/sdk";
+
+function App() {
+  return <CanonicalRegistryProvider>{/* ... */}</CanonicalRegistryProvider>;
+}
+
+function IdentifierCard({ id }: { id: `0x${string}` }) {
+  const { data } = useIdentifier(id);
+  const claim = useClaim();
+
+  return (
+    <div>
+      <p>Owner: {data?.owner ?? "Unclaimed"}</p>
+      <p>Deposit: {data?.escrowAddress}</p>
+    </div>
+  );
+}
+```
+
 ## Packages
 
 ```
@@ -118,7 +140,11 @@ packages/
   ui/          — Shared Shadcn UI components
 apps/
   web/         — Next.js frontend
-  docs/        — Documentation site
+  docs/        — Documentation site (concepts, architecture, integration, security)
 ```
 
-See [PROTOCOL.md](./PROTOCOL.md) for the full protocol design, trust model, security considerations, and integration guide.
+## Documentation
+
+- [OVERVIEW.md](./OVERVIEW.md) — What this is and why it exists
+- [spec.md](./spec.md) — Full research paper (design trade-offs, open questions)
+- [Documentation site](./apps/docs/) — Concepts, architecture, integration guide, security model, requirements

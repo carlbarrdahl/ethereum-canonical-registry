@@ -1,0 +1,89 @@
+---
+title: Security
+description: Trust model, security considerations, and known limitations
+---
+
+# Security
+
+## Trust Model
+
+The registry contract has no privileged operators beyond the admin key, whose only authority is registering and replacing verifier contracts via `setVerifier` and upgrading the escrow implementation via `upgradeEscrowImplementation`. It holds no funds. The trust assumptions are in the verifiers and the escrow module.
+
+### Trust Assumptions by Actor
+
+| Actor | Trust Level | Capabilities |
+|---|---|---|
+| **Registry owner** | Trusted admin | Can update verifiers, upgrade escrow impl via beacon |
+| **Oracle signer** | Trusted for proofs | Signs claim proofs after off-chain verification; cannot affect existing ownership |
+| **Claimants** | Must prove ownership | Can claim only with a valid, unexpired oracle proof |
+| **Funders** | Trustless | Send tokens to deposit addresses; receive nothing back |
+| **Withdrawers** | Permissionless | Call `withdraw`; funds always go to registered owner, not caller |
+
+### Oracle Verifiers (Current)
+
+A trusted backend confirms ownership off-chain and issues a signed proof. The trust model is equivalent to trusting that backend service.
+
+Mitigations:
+- The signing key is rotatable via `setTrustedSigner` without changing the registry or invalidating existing claims
+- A compromised key allows claiming any unclaimed identifier in affected namespaces, until the key is rotated
+- Signing keys should be held in an HSM with defined rotation procedures
+
+### ZK Verifiers (Migration Path)
+
+Ownership is proven cryptographically on-chain. No trust assumption beyond the proof system itself.
+
+- **GitHub:** zkTLS proof of the GitHub API response (vlayer, TLSNotary)
+- **DNS:** DNSSEC proof — ENS's `DNSSECImpl` can be wrapped directly as an `IVerifier`
+
+The migration path: deploy a new `IVerifier` implementation and call `registry.setVerifier(namespace, newVerifier)`. Existing claims are unaffected.
+
+---
+
+## Security Considerations
+
+### Proof Replay
+
+EIP-712 domain separation binds proofs to a specific chain and registry deployment. Proofs include a claimant address and an expiry timestamp (default 1 hour). Within the TTL window, the same proof could be re-submitted by the same claimant after a revoke. This is accepted at the contract level and mitigated by the backend issuing fresh proofs on each request.
+
+### Identifier Collisions
+
+`abi.encode` (length-prefixed) prevents collisions between different namespace/string pairs that produce the same packed concatenation — e.g. `"githu"+"borg/repo"` vs `"github"+"org/repo"`.
+
+### Normalisation
+
+Rules are namespace-specific and enforced by verifiers, not globally by the registry. Frontends and verifiers share responsibility for consistent canonicalisation. Future namespaces may be case-sensitive.
+
+### Oracle Key Compromise
+
+A compromised signing key allows claiming any unclaimed identifier in all namespaces sharing that verifier, until the key is rotated. Key storage and rotation procedures are required for production deployments.
+
+### Escrow Upgradeability
+
+The beacon is owned by the `EscrowFactory`. Upgrading the escrow implementation simultaneously affects the logic behind all deployed proxies. The factory admin key is a critical trust assumption for the pre-funding module, independent of the registry admin key.
+
+### Counterfactual Address Griefing
+
+Deposit addresses are public and computable by anyone. An adversary could pre-deploy escrow proxies for identifiers at a gas cost, without any effect on correctness — the deposit address and accumulated funds are unaffected. This is a nuisance, not a security issue.
+
+### No Ownership Transfer
+
+There is no `transferOwnership` function. The only way to change the registered address is to revoke and re-claim with a fresh proof. This ties the registered address to the actual identity owner at claim time, but means wallet rotation requires a new verification round-trip.
+
+---
+
+## Non-Custodial Properties
+
+`ClaimableEscrow` has no function to redirect funds to an arbitrary address. The only exit path for funds is `withdraw(token)`, which sends to `registry.ownerOf(id)`. The registry owner can change verifiers or upgrade the escrow implementation, but cannot redirect funds from an existing escrow.
+
+`withdraw` is permissionless — anyone can trigger it. This prevents funds from being locked by an inactive owner.
+
+---
+
+## Known Limitations (POC)
+
+| Limitation | Risk | Production Solution |
+|---|---|---|
+| Oracle-based verification | Requires trusting the oracle backend | Replace with DNSSEC on-chain verification via ENS DNSSECImpl |
+| Single trusted signer | Key compromise allows fraudulent claims | Threshold signatures or HSM |
+| No claim timelock | Fresh claims immediately enable withdrawal | Add claim cooldown for large deposits |
+| Fee-on-transfer tokens | Balance calculations off | Explicit token allowlist or deposit accounting |

@@ -4,7 +4,9 @@
     "index",
     "concepts",
     "architecture",
+    "integration",
+    "verifiers",
+    "security",
     "requirements"
-    
   ]
 }

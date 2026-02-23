@@ -1,0 +1,105 @@
+---
+title: Integration Guide
+description: How to use the Canonical Registry as a funder, on-chain consumer, distribution protocol, or registrant
+---
+
+# Integration Guide
+
+The registry serves different roles depending on who you are. This page covers integration patterns for each.
+
+## As a Funder
+
+You don't need to know the registry exists. Compute the deposit address for any identifier and transfer tokens directly to it — before or after the identifier is claimed.
+
+```ts
+import { CanonicalRegistrySDK } from "@ethereum-canonical-registry/sdk";
+
+const sdk = new CanonicalRegistrySDK();
+const { depositAddress } = await sdk.registry.resolveIdentifier("github", "org/repo");
+
+await token.transfer(depositAddress, amount);
+```
+
+Funds accumulate at the deposit address until the identifier's owner claims and withdraws them.
+
+## As an On-Chain Consumer
+
+The minimal interface for smart contracts that need to resolve identifiers:
+
+```solidity
+import {ICanonicalRegistry} from "@ethereum-canonical-registry/contracts/contracts/ICanonicalRegistry.sol";
+
+bytes32 id = keccak256(abi.encode("github", "org/repo"));
+address owner = ICanonicalRegistry(registry).ownerOf(id);
+
+if (owner != address(0)) {
+    // Identifier is claimed — send directly to owner
+    token.transfer(owner, amount);
+} else {
+    // Identifier is unclaimed — send to deposit address for later withdrawal
+    token.transfer(depositAddress, amount);
+}
+```
+
+`ownerOf` resolves through aliases transparently — no special handling needed for linked identifiers.
+
+## As a Distribution Protocol
+
+For protocols building allocation systems — grant programs, funding distributions, dependency tooling — the recommended flow at allocation creation time:
+
+- **If claimed:** use the registrant address directly as the allocation recipient. Funds flow to the registrant's warehouse balance and are withdrawn normally.
+- **If unclaimed:** use the deposit address as the allocation recipient. Funds accumulate in the escrow until the identifier is claimed, at which point the registrant calls `withdraw`.
+
+The resolved address is stored as a plain Ethereum address in the upstream protocol. No knowledge of the registry is required at distribution time.
+
+```ts
+const state = await sdk.registry.resolveIdentifier("github", "org/repo", tokenAddress);
+
+const recipient = state.owner ?? state.depositAddress;
+```
+
+## As a Registrant (Claiming and Withdrawing)
+
+1. **Generate a proof** via the web API for your namespace (GitHub OAuth or DNS TXT record).
+2. **Claim** — submits the proof on-chain and deploys the escrow proxy:
+
+```ts
+await sdk.registry.claim("github", "org/repo", proof);
+```
+
+3. **Withdraw** — pulls all accumulated funds from the escrow to your address:
+
+```ts
+await sdk.escrow.withdraw(depositAddress, tokenAddress);
+```
+
+Anyone can trigger `withdraw` — funds always go to the registered owner, not the caller. This means a frontend or keeper can sweep on the owner's behalf.
+
+## Splits Warehouse
+
+Any protocol that routes funds via Splits Warehouse can use deposit addresses as allocation recipients. The deposit address is a normal Ethereum address — pass it to `warehouse.batchDeposit` as you would any other recipient.
+
+```
+Funder → warehouse.batchDeposit([depositAddress, ...], token, amounts)
+           → escrow accumulates warehouse balance
+           → owner claims registry identifier
+           → escrow.withdraw(token)
+               pulls warehouse balance + any direct transfers → owner
+```
+
+The deposit address is computable before the identifier is claimed, so protocols can allocate funds to unclaimed identifiers — funds accumulate in the warehouse and become withdrawable the moment the owner claims.
+
+## Adding a New Namespace
+
+Deploy a verifier implementing `IVerifier` and propose it to the registry admin for registration. Since the registry is a shared deployment, namespace registration is controlled by registry governance — anyone can build and propose a verifier, but `setVerifier` requires the admin key.
+
+```solidity
+interface IVerifier {
+    function verify(bytes32 id, address claimant, bytes calldata proof) external returns (bool);
+}
+
+// Called by registry admin
+registry.setVerifier("npm", address(npmVerifier));
+```
+
+Any `verify` implementation is valid — oracle-signed, ZK proof, on-chain attestation. Existing namespaces are unaffected.

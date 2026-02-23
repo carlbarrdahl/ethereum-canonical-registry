@@ -1,0 +1,112 @@
+---
+title: Verifiers
+description: How namespace verification works — oracle verifiers, EIP-712 proofs, and the path to ZK
+---
+
+# Verifiers
+
+The registry delegates ownership verification to a per-namespace **verifier** contract. This page explains the verifier interface, the current oracle implementation, and the migration path to trustless verification.
+
+## Interface
+
+```solidity
+interface IVerifier {
+    function verify(bytes32 id, address claimant, bytes calldata proof) external returns (bool);
+}
+```
+
+The registry calls `verify` during `claim`. If it returns `true`, the claim succeeds and the registry records `owners[id] = msg.sender`. Any implementation is valid — oracle-signed, ZK proof, on-chain attestation.
+
+The registry owner registers one verifier per namespace via `setVerifier(namespace, verifierAddress)`. Verifiers are swappable without affecting existing claims or other namespaces.
+
+## Oracle Verifiers (Current)
+
+The reference implementation uses a trusted backend service (oracle model):
+
+1. The claimant authenticates with the backend (GitHub OAuth, or sets a DNS TXT record)
+2. The backend confirms ownership off-chain
+3. The backend signs an EIP-712 typed data proof: `{id, claimant, expiry}`
+4. The claimant submits the signed proof on-chain
+5. The `OracleVerifier` base contract recovers the signer and checks it matches `trustedSigner`
+
+```
+DnsVerifier    GitHubVerifier
+     │               │
+     └───────┬───────┘
+             │
+        OracleVerifier (base)
+             │
+       verify(id, claimant, proof)
+             │
+    recover signer from EIP-712 sig
+    check expiry + signer == trustedSigner
+```
+
+### EIP-712 Domain Separation
+
+All oracle proofs use EIP-712 typed data signatures. The domain separator includes:
+
+| Field | Purpose |
+|---|---|
+| `registry` address | Prevents cross-deployment replay |
+| `chainId` | Prevents cross-chain replay |
+
+Each proof also includes:
+
+| Field | Purpose |
+|---|---|
+| `id` | Binds to a specific identifier |
+| `claimant` | Binds to a specific wallet — proof cannot be used by another sender |
+| `expiry` | Time-limited (default 1 hour) — prevents indefinite replay |
+
+### GitHub Verifier
+
+The `VerifierGitHub` contract extends `OracleVerifier`. The backend:
+
+1. Exchanges an OAuth code for a GitHub access token
+2. Calls the GitHub API to verify the user has admin access to the repository
+3. Signs a proof binding the repository identifier to the claimant's address
+
+### DNS Verifier
+
+The `VerifierDns` contract extends `OracleVerifier`. The backend:
+
+1. Resolves the `_eth-canonical.<domain>` TXT record
+2. Checks the record contains the claimant's Ethereum address
+3. Signs a proof binding the domain identifier to the claimant's address
+
+### Signer Management
+
+The trusted signer key can be rotated via `setTrustedSigner` on the verifier contract. Existing claims are not affected by a signer rotation — only new proofs need to be signed with the new key.
+
+## ZK Verifiers (Migration Path)
+
+The verifier interface is designed to accommodate a migration from oracle-based to ZK-based proofs with no changes to the registry:
+
+### GitHub via zkTLS
+
+Tools like vlayer and TLSNotary can produce ZK proofs of HTTPS responses. A `VerifierGitHubZK` would verify a ZK proof that the GitHub API responded with the expected ownership data, removing the trusted backend entirely.
+
+### DNS via DNSSEC
+
+For DNS domains, a fully trustless path already exists. ENS's `DNSSECImpl` contract verifies DNSSEC proofs on-chain. A `VerifierDNSSEC` contract wrapping `DNSSECImpl` would replace the oracle verifier with no changes to the registry — the same `IVerifier` interface, backed by cryptographic proof instead of a signature.
+
+### Migration Process
+
+1. Deploy the new `IVerifier` implementation
+2. Call `registry.setVerifier(namespace, newVerifierAddress)`
+3. New claims use the ZK verifier; existing claims are unaffected
+4. The old oracle verifier can be decommissioned
+
+No migration is needed for existing registrations — only the verification method for new claims changes.
+
+## Source Layout
+
+```
+packages/contracts/contracts/
+  IVerifier.sol               — verifier interface
+  verifiers/
+    VerifierOracle.sol        — base: EIP-712 oracle-signed proofs
+    VerifierGitHub.sol        — GitHub OAuth verifier
+    VerifierDns.sol           — DNS TXT record verifier
+```
