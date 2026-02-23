@@ -2,7 +2,12 @@
   "name": "@ethereum-canonical-registry/contracts",
   "version": "1.0.0",
   "type": "module",
+  "files": [
+    "contracts",
+    "deployments.json"
+  ],
   "exports": {
+    "./contracts/*": "./contracts/*",
     "./deployments.json": "./deployments.json"
   },
   "scripts": {
