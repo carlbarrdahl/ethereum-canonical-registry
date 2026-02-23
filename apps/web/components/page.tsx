@@ -1,7 +1,7 @@
 import { type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
-import { cn } from "@workspace/ui/lib/utils";
+import { cn } from "@ethereum-canonical-registry/ui/lib/utils";
 
 interface PageProps {
   children: ReactNode;

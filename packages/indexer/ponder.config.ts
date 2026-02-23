@@ -9,7 +9,7 @@ import { type Abi, parseAbiItem } from "viem";
 import { hardhat, sepolia, mainnet } from "viem/chains";
 import { http } from "viem";
 
-import deployments from "@workspace/contracts/deployments.json";
+import deployments from "@ethereum-canonical-registry/contracts/deployments.json";
 
 // Environment detection
 const isDev = process.env.NODE_ENV === "development";

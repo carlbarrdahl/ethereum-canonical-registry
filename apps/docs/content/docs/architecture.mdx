@@ -8,78 +8,75 @@ description: System design, capital flows, security model, and technical decisio
 ## System Overview
 
 ```
-┌───────────────────────────────────────────────────────────────────────┐
-│                         ON-CHAIN                                      │
-│                                                                       │
-│  Curator ──▶ StrategyFactory ──▶ Strategy (clone) ──▶ Warehouse    │
-│                                      ▲                    │           │
-│              Donors ─── fund ────────┘              withdraw          │
-│                                                           ▼           │
-│              YieldRedirector ──▶ Source Vault        Recipients      │
-│                    │                                                  │
-│               harvest() ──▶ Strategy ──▶ Warehouse                  │
-│                                                                       │
-├───────────────────────────────────────────────────────────────────────┤
-│                        OFF-CHAIN                                      │
-│                                                                       │
-│  Contracts ──events──▶ Indexer (Ponder) ◀──queries──▶ SDK ──▶ Web │
-└───────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                          ON-CHAIN                                    │
+│                                                                      │
+│  CanonicalRegistry                                                   │
+│       │                                                              │
+│       ├── verifiers[namespace] ──▶ DnsVerifier / GitHubVerifier     │
+│       │                              (OracleVerifier base)           │
+│       │                                                              │
+│       └── beacon ──▶ ClaimableEscrow (impl)                         │
+│                            │                                         │
+│              CREATE2 proxies per identifier                          │
+│                            │                                         │
+│  Funders ──(ERC-20)──▶  0x4a3b... (escrow proxy)                   │
+│                            │                                         │
+│                       withdrawTo() ──▶ registered owner             │
+│                                                                      │
+│  SplitsWarehouse ◀── optional deposit path                          │
+│                                                                      │
+├──────────────────────────────────────────────────────────────────────┤
+│                         OFF-CHAIN                                    │
+│                                                                      │
+│  Oracle backend ──signs proofs──▶ Claimants                         │
+│                                                                      │
+│  Contracts ──events──▶ Indexer (Ponder) ◀──queries──▶ SDK ──▶ Web  │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ### On-Chain Layer
 
 | Contract | Purpose | Pattern |
 |---|---|---|
-| **StrategyFactory** | Deploys Strategy clones | Factory + EIP-1167 clones |
-| **Strategy** | Holds allocations, distributes funds | Minimal proxy clone |
-| **SplitsWarehouse** | Holds recipient balances | External singleton (0xSplits) |
-| **YieldRedirectorFactory** | Deploys YieldRedirector clones | Factory + EIP-1167 clones |
-| **YieldRedirector4626** | Wraps ERC-4626 vaults, redirects yield | Minimal proxy clone |
-| **ForeverSubnameRegistrar** | Manages `.support.eth` ENS subdomains | External singleton |
+| **CanonicalRegistry** | Manages identifier ownership, escrow deployment, verifier registry | Ownable singleton |
+| **ClaimableEscrow** | Holds funds per identifier; routes withdrawals to owner | BeaconProxy per identifier |
+| **UpgradeableBeacon** | Points all escrow proxies to the current implementation | OZ beacon |
+| **OracleVerifier** | Base EIP-712 verifier using a trusted backend signer | Abstract base |
+| **DnsVerifier** | Verifies DNS TXT record ownership via oracle | Extends OracleVerifier |
+| **GitHubVerifier** | Verifies GitHub repo ownership via oracle | Extends OracleVerifier |
+| **SplitsWarehouse** | ERC-6909 multi-token vault for escrowed balances | External singleton (0xSplits) |
 
 ### Off-Chain Layer
 
 | Component | Purpose |
 |---|---|
-| **Indexer** (Ponder) | Processes contract events, maintains queryable state via GraphQL + REST |
-| **SDK** (`@workspace/sdk`) | TypeScript client for contracts and indexer, React hooks |
-| **Web App** (`@workspace/web`) | Next.js 16 frontend with Shadcn UI |
+| **Oracle backend** | Confirms off-chain ownership (DNS TXT, GitHub OAuth), signs EIP-712 proofs |
+| **Indexer** (Ponder) | Processes contract events, exposes queryable state via GraphQL + REST |
+| **SDK** (`@ethereum-canonical-registry/sdk`) | TypeScript client for contracts and indexer, React hooks, pure utils |
+| **Web App** (`@ethereum-canonical-registry/web`) | Next.js frontend |
 
 ---
 
-## Capital Flows
-
-### Direct Funding
+## Capital Flow
 
 ```
-Donor ──(transfer)──▶ Strategy ──(distribute)──▶ Warehouse ──(withdraw)──▶ Recipients
+Funder ──(ERC-20 transfer)──▶ 0x4a3b... (ClaimableEscrow proxy)
+                                        │
+                         Owner claims identifier
+                                        │
+                         withdrawTo(token) called (by anyone)
+                                        │
+                                        ▼
+                              Registered owner receives funds
 ```
 
-1. Donor sends ERC-20 or ETH to the strategy address (or ENS name)
-2. Anyone calls `distribute(token)` — calculates shares by weight, batch-deposits to warehouse
-3. Recipients call `withdraw(owner, token)` when ready
+1. Funder sends ERC-20 tokens to the deterministic deposit address
+2. Tokens accumulate in the `ClaimableEscrow` proxy (or Splits Warehouse if deposited there)
+3. After the owner claims the identifier with a valid proof, anyone can call `withdrawTo(token)`
+4. Funds route exclusively to the current registered owner — the caller receives nothing
 
-### Yield Funding
-
-```
-Capital Provider ──(deposit)──▶ YieldRedirector ──▶ Source Vault
-                                                          │
-                                                    generates yield
-                                                          │
-                                    harvest() ◀──────────┘
-                                       │
-                                       ▼
-                                  Strategy ──(distribute)──▶ Warehouse ──▶ Recipients
-```
-
-1. Capital provider deposits into YieldRedirector
-2. Assets route to source vault (Morpho, Euler, etc.) which generates yield
-3. Anyone calls `harvest()` — skims surplus above principal, sends to Strategy, triggers `distribute()`
-4. Capital provider can withdraw principal at any time
-
-### Fund-of-Funds
-
-When a strategy allocates to another strategy, distribution credits the child strategy's warehouse balance. The child strategy then needs a separate `distribute()` call to route funds to its own recipients. This enables hierarchical curation with independent distribution at each level.
+The deposit address is stable and computable before the escrow proxy is deployed. Funders do not need to wait for the owner to claim.
 
 ---
 
@@ -89,74 +86,73 @@ When a strategy allocates to another strategy, distribution credits the child st
 
 | Actor | Trust Level | Capabilities |
 |---|---|---|
-| **Strategy Owner** | Trusted for allocations only | Can rebalance. Cannot withdraw, pause, or upgrade. |
-| **Donors** | Trustless | Send funds directly. No approval needed. |
-| **Recipients** | Trustless | Pull from warehouse. Isolated failures. |
-| **Protocol** | Trustless | No admin keys. No upgrade authority. |
+| **Registry owner** | Trusted admin | Can update verifiers, upgrade escrow impl via beacon |
+| **Oracle signer** | Trusted for proofs | Signs claim proofs after off-chain verification; cannot affect existing ownership |
+| **Claimants** | Must prove ownership | Can claim only with a valid, unexpired oracle proof |
+| **Funders** | Trustless | Send tokens to deposit addresses; receive nothing back |
+| **Withdrawers** | Permissionless | Call `withdrawTo`; funds always go to registered owner, not caller |
 
 ### Non-Custodial Properties
 
-The Strategy contract has **no withdrawal function**. Funds can only leave via `distribute()`, which routes to configured recipients through the warehouse. The owner can change *where* funds go (rebalance) but can never extract funds.
+`ClaimableEscrow` has **no function to redirect funds to an arbitrary address**. The only exit path for funds is `withdrawTo(token)`, which sends to `registry.ownerOf(id)`. The registry owner can change verifiers or upgrade the escrow implementation, but cannot redirect funds from an existing escrow.
 
-Distribution is **permissionless** — anyone can call `distribute()`. This prevents funds from being locked by an inactive owner.
+`withdrawTo` is **permissionless** — anyone can trigger it. This prevents funds from being locked by an inactive owner.
 
-Recipients **self-custody** — only the balance owner (or delegate) can call `warehouse.withdraw()`. No one can redirect, freeze, or force withdrawals.
+### Verifier Security
 
-### Failure Isolation
+Oracle proofs are EIP-712 typed data bound to:
+- `registry` address (prevents cross-deployment replay)
+- `chainId` (prevents cross-chain replay)
+- `id` (specific identifier)
+- `claimant` (specific wallet)
+- `expiry` (time-limited)
 
-- Each strategy is independent — no shared state except warehouse
-- Batch deposit to warehouse means reverting recipients don't block others
-- Factory is stateless beyond the implementation address — no admin, no pause
+The trusted signer key can be rotated via `setTrustedSigner` on the verifier. Existing claims are not affected by a signer rotation.
 
-### Security Features
+### Escrow Upgradeability
 
-- `ReentrancyGuard` on all state-changing functions (`distribute`, `harvest`, `deposit`, `withdraw`)
-- `SafeERC20` for all token operations
-- Checks-Effects-Interactions pattern throughout
-- Custom errors for gas efficiency
-- `_disableInitializers()` on implementation contracts
+The beacon pattern allows the registry owner to fix bugs in the escrow implementation without changing any deposit addresses. All proxies automatically point to the new implementation after an upgrade. The upgrade cannot change which identifier an escrow belongs to or redirect withdrawals to a different owner — those invariants are enforced by `registry.ownerOf(id)`.
 
 ### Known Limitations (POC)
 
 | Limitation | Risk | Production Solution |
 |---|---|---|
-| No rebalance timelock | Owner can front-run large donations | 24-48h timelock on `rebalance()` |
-| No minimum distribution | Gas griefing via tiny distributions | `MIN_DISTRIBUTION` threshold |
-| No emergency pause | Cannot halt on vulnerability discovery | Pausable with multisig + timelock |
-| No harvest cooldown | Gas griefing on yield redirector | Cooldown period between harvests |
-| Fee-on-transfer tokens | Balance calculations incorrect | Token allowlist or explicit warning |
-| Rebasing tokens | Share accounting breaks | Not supported |
-
-### Invariants
-
-**Strategy**: `totalWeight == sum(allocations[i].weight)`, `allocations.length <= 50`, all recipients non-zero, all weights > 0.
-
-**YieldRedirector**: `principal <= sourceVault value`, `totalSupply() == principal` (1:1 shares), `surplus() >= 0`.
+| Oracle-based verification | Requires trusting the oracle backend | Replace with DNSSEC on-chain verification via ENS DNSSECImpl |
+| Single trusted signer | Key compromise allows fraudulent claims | Threshold signatures or HSM |
+| No claim timelock | Fresh claims immediately enable withdrawal | Add claim cooldown for large deposits |
+| Fee-on-transfer tokens | Balance calculations off | Explicit token allowlist or deposit accounting |
 
 ---
 
 ## Technical Decisions
 
-### Weights Over Percentages
+### CREATE2 for Deposit Addresses
 
-Weights allow adding recipients without recalculating existing allocations. No need to sum to 100. Any precision supported.
+Using the identifier as the CREATE2 salt means the deposit address is:
+- Derivable from the identifier alone (no on-chain lookup)
+- Stable across re-deployments (same identifier → same address)
+- Unique per identifier (no collisions)
 
-### Pull-Based Warehouse (0xSplits)
+Anyone can compute the address with `keccak256(abi.encode(namespace, canonicalString))` and the BeaconProxy initcode — the SDK's `toId()` utility handles this.
 
-One batch deposit instead of N transfers. Reverting recipients don't block distribution. Recipients accumulate from multiple strategies and claim when convenient. Battle-tested code from the Splits ecosystem.
+### BeaconProxy for Escrows
 
-### Fees as Allocations
+The beacon pattern is chosen over:
+- **Plain clones (EIP-1167)**: non-upgradeable; a bug in escrow logic cannot be fixed without redeploying all proxies to new addresses
+- **Individual transparent proxies**: each proxy stores its own admin/implementation slot, costing more gas and providing no groupwide upgrade path
+- **Upgradeable proxies per clone**: same upgradeability as beacon but storage layout is shared across all instances, reducing per-proxy overhead
 
-Curator fees are regular allocations — no special fee handling code. Fully transparent, any fee structure, same code path for fees and recipients.
+### abi.encode vs. abi.encodePacked
 
-### ERC-4626 for Yield Redirector
+`abi.encode` prefixes each argument with its length, preventing `("githu", "borg/repo")` from hashing identically to `("github", "org/repo")`. `abi.encodePacked` would produce the same bytes for both.
 
-Standard vault interface for composability. `totalAssets()` overridden to return principal only, keeping share price stable at 1:1 so yield is cleanly separable.
+### Namespace-Scoped Verifiers
 
-### EIP-1167 Minimal Proxies
+A single `mapping(bytes32 => address) public verifiers` (keyed by `keccak256(bytes(namespace))`) allows:
+- Independent verification logic per namespace
+- Upgrades to one namespace without affecting others (e.g., migrate DNS to on-chain DNSSEC)
+- Adding new namespaces (npm packages, Twitter handles, etc.) without changing the registry
 
-~100k gas per strategy deployment instead of ~500k. All clones share the implementation contract. Trade-off: slightly higher per-call gas from DELEGATECALL, cannot upgrade individual clones.
+### SplitsWarehouse Integration
 
-### ENS Subdomains
-
-Free, permanent `.support.eth` subdomains instead of requiring users to buy their own ENS names. Consistent namespace for discovery. Both forward resolution (name → address) and reverse resolution (address → name) are set up during registration.
+Escrows integrate with Splits Warehouse so funders can use Splits' batch deposit tools. `withdrawTo` first pulls any warehouse balance, then transfers the combined ERC-20 balance to the owner — a single call handles both paths.

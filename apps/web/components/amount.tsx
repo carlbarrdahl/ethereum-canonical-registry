@@ -1,6 +1,6 @@
 import { formatUnits } from "viem";
 import { formatNumber, formatMoney } from "../lib/format";
-import { cn } from "@workspace/ui/lib/utils";
+import { cn } from "@ethereum-canonical-registry/ui/lib/utils";
 
 export const Amount = ({
   amount,

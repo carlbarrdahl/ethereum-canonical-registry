@@ -7,8 +7,8 @@ import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "@workspace/ui/components/avatar";
-import deployments from "@workspace/contracts/deployments.json";
+} from "@ethereum-canonical-registry/ui/components/avatar";
+import deployments from "@ethereum-canonical-registry/contracts/deployments.json";
 
 function getUniversalResolverAddress(chainId: number): Address | undefined {
   const d = deployments[chainId as keyof typeof deployments] as

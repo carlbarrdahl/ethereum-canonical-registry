@@ -1,6 +1,6 @@
 import dynamic from "next/dynamic";
 
-import { cn } from "@workspace/ui/lib/utils";
+import { cn } from "@ethereum-canonical-registry/ui/lib/utils";
 const ReactMarkdown = dynamic(() => import("react-markdown"), {});
 
 export function Markdown({

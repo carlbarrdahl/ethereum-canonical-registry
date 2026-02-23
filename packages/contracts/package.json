@@ -1,5 +1,5 @@
 {
-  "name": "@workspace/contracts",
+  "name": "@ethereum-canonical-registry/contracts",
   "version": "1.0.0",
   "type": "module",
   "exports": {
@@ -9,9 +9,9 @@
     "dev": "npx hardhat node --network hardhat",
     "build": "npx hardhat compile",
     "test": "npx hardhat test nodejs",
-    "deploy": "npm run build && npx hardhat ignition deploy ignition/modules/Strategy.ts --network localhost --reset --parameters ignition/parameters/hardhat.json && npm run generate-abi && bun run scripts/configure-factory-ens.ts",
-    "deploy:sepolia": "npm run build && npx hardhat ignition deploy ignition/modules/Strategy.sepolia.ts --network sepolia --parameters ignition/parameters/sepolia.json && npm run generate-abi",
-    "deploy:mainnet": "npm run build && npx hardhat ignition deploy ignition/modules/Strategy.production.ts --network mainnet --parameters ignition/parameters/mainnet.json && npm run generate-abi",
+    "deploy": "bun run build && bun x hardhat ignition deploy ignition/modules/Registry.ts --network localhost --reset && bun run generate-abi",
+    "deploy:sepolia": "bun run build && bun x hardhat ignition deploy ignition/modules/Registry.sepolia.ts --network sepolia --parameters ignition/parameters/sepolia.json && bun run generate-abi",
+    "deploy:mainnet": "bun run build && bun x hardhat ignition deploy ignition/modules/Registry.production.ts --network mainnet --parameters ignition/parameters/mainnet.json && bun run generate-abi",
     "seed": "bun run scripts/seed.ts",
     "generate-abi": "bun run scripts/generate-abi.ts",
     "verify-ens": "bun run scripts/verify-ens.ts",

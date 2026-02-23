@@ -1,4 +1,4 @@
-import { config as sdkConfig, type SupportedChainId } from "@workspace/sdk";
+import { config as sdkConfig, type SupportedChainId } from "@ethereum-canonical-registry/sdk";
 
 const PRECISION = 18n; // Number of decimal places for fixed-point arithmetic
 const SCALE = 10n ** PRECISION; // Scaling factor for fixed-point numbers

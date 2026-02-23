@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 // Image metadata
-export const alt = "support.eth curator - Public Goods Funding Strategies";
+export const alt = "Canonical Registry - Off-chain entity registry";
 export const size = {
   width: 1200,
   height: 630,
@@ -46,7 +46,7 @@ export default async function Image() {
               WebkitTextFillColor: "transparent",
             }}
           >
-            support.eth curator
+            Canonical Registry
           </div>
           <div
             style={{
@@ -56,7 +56,7 @@ export default async function Image() {
               maxWidth: "900px",
             }}
           >
-            Public Goods Funding Strategies
+            Off-chain entity registry
           </div>
           <div
             style={{
@@ -67,7 +67,7 @@ export default async function Image() {
               marginTop: "16px",
             }}
           >
-            Design, publish, and operate capital allocation strategies
+            Maps off-chain identifiers to Ethereum addresses. Any protocol can read it. Any entity can register.
           </div>
         </div>
       </div>

@@ -35,8 +35,8 @@ export default buildModule("DeployModule", (m) => {
   ]);
 
   // Register verifiers on the registry
-  m.call(registry, "setVerifier", ["dns", dnsVerifier]);
-  m.call(registry, "setVerifier", ["github", gitHubVerifier]);
+  m.call(registry, "setVerifier", ["dns", dnsVerifier], { id: "SetDnsVerifier" });
+  m.call(registry, "setVerifier", ["github", gitHubVerifier], { id: "SetGitHubVerifier" });
 
   // Deploy test tokens
   const testTokensModule = m.useModule(TestTokensModule);

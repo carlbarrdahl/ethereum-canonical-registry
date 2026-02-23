@@ -8,7 +8,7 @@ import {
 import { mainnet, sepolia, hardhat } from "viem/chains";
 import { createIndexer, type Indexer } from "./lib/indexer";
 import { config, type SupportedChainId } from "./config";
-import deployments from "@workspace/contracts/deployments.json";
+import deployments from "@ethereum-canonical-registry/contracts/deployments.json";
 
 import { createRegistryMethods } from "./registry";
 import { createEscrowMethods } from "./escrow";
@@ -20,6 +20,8 @@ export * from "./hooks";
 export * from "./lib/indexer";
 export { config, type SupportedChainId } from "./config";
 export * from "./tokens";
+export * from "./utils";
+export type { IdentifierState } from "./registry";
 
 type ChainDeployments = (typeof deployments)["31337"];
 
@@ -42,7 +44,7 @@ function getChain(chainId: SupportedChainId) {
   }
 }
 
-export class CuratorSDK {
+export class CanonicalRegistrySDK {
   #wallet: WalletClient | undefined;
   #public: PublicClient;
   #chainId: SupportedChainId;

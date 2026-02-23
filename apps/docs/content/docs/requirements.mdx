@@ -1,6 +1,6 @@
 ---
 title: Requirements
-description: EARS requirements specification for Curator Studio
+description: EARS requirements specification for the Canonical Registry
 ---
 
 # Requirements
@@ -16,158 +16,166 @@ Structured requirements using [EARS notation](https://alistairmavin.com/ears/) (
 
 ---
 
-## Strategy Contract
+## 1. Identifier Derivation
 
-**REQ-S1**: The Strategy shall store: an array of allocations (recipient address, uint96 weight, string label), a totalWeight, an owner, a sourceStrategy address, and a metadataURI string.
+**CR-ID-01** The registry shall derive an identifier `id` from a `(namespace, canonicalString)` pair as `keccak256(abi.encode(namespace, canonicalString))`.
 
-**REQ-S2**: The Strategy shall hold immutable references to the SplitsWarehouse and ReverseRegistrar contracts, shared across all clones.
-
-**REQ-S3**: The Strategy shall enforce a maximum of 50 allocations, no zero-address recipients, no zero weights, and no weight overflow.
-
-**REQ-S4**: When `initialize(config, ensName)` is called, the Strategy shall set the owner, sourceStrategy, metadataURI, and allocations from config, and if ensName is non-empty, call `reverseRegistrar.setName(ensName)`.
-
-**REQ-S5**: When native ETH is received via `receive()`, the Strategy shall emit `Funded(NATIVE_TOKEN, msg.sender, msg.value)`.
-
-**REQ-S6**: When `distribute(token)` is called, the Strategy shall calculate each recipient's share as `(balance × weight) / totalWeight`, assign the remainder to the last recipient, and call `warehouse.batchDeposit` with all recipients and amounts in a single transaction.
-
-**REQ-S7**: When `distribute(token)` is called, the Strategy shall emit `Distributed(token, totalAmount, allocations)` and `Payout(recipient, token, amount)` for each non-zero payout.
-
-**REQ-S8**: If totalWeight is 0 when `distribute` is called, then the Strategy shall revert with `NoAllocationsSet`.
-
-**REQ-S9**: If the token balance is 0 when `distribute` is called, then the Strategy shall revert with `NoBalanceToDistribute`.
-
-**REQ-S10**: When `rebalance(allocations, metadataURI)` is called by the owner, the Strategy shall replace all allocations, update totalWeight, update metadataURI, and emit `Rebalanced(allocations, metadataURI)`.
-
-**REQ-S11**: If `rebalance` is called by a non-owner, then the Strategy shall revert.
-
-**REQ-S12**: The Strategy shall implement ERC-1155 receiver interfaces (`onERC1155Received`, `onERC1155BatchReceived`, `supportsInterface`) to temporarily hold wrapped ENS names.
-
-**REQ-S13**: The Strategy shall use `ReentrancyGuard` on `distribute` and `SafeERC20` for all token transfers.
+**CR-ID-02** The registry shall use `abi.encode` (not `abi.encodePacked`) to prevent identifier collisions between namespace/string pairs that share a common packed concatenation.
 
 ---
 
-## StrategyFactory Contract
+## 2. Deterministic Deposit Addresses
 
-**REQ-F1**: The StrategyFactory shall deploy a Strategy implementation in its constructor and store it as an immutable reference.
+**CR-ADDR-01** The registry shall assign every identifier a deterministic Ethereum address, derivable by anyone without making an on-chain call.
 
-**REQ-F2**: When `create(config, label)` is called, the StrategyFactory shall deploy a minimal proxy clone of the implementation and initialize it with the provided config.
+**CR-ADDR-02** The registry shall compute deposit addresses via CREATE2 using the identifier as the salt and the BeaconProxy initcode as the creation code.
 
-**REQ-F3**: When `create` is called with a non-empty label and ENS is configured, the StrategyFactory shall register the subdomain via ForeverSubnameRegistrar, initialize the strategy with `label.ensDomain` as the ENS name, set forward resolution via PublicResolver, and transfer the ENS name to the strategy via NameWrapper.
-
-**REQ-F4**: When `create` is called with an empty label, the StrategyFactory shall initialize the strategy with an empty ENS name.
-
-**REQ-F5**: When `create` completes, the StrategyFactory shall emit `StrategyCreated(strategy, config, label, node)`.
-
-**REQ-F6**: When `setENSName(strategy, label)` is called, the StrategyFactory shall register or connect the subdomain, set forward and reverse resolution, transfer name ownership to the strategy, and emit `ENSNameSet(strategy, label, node)`.
-
-**REQ-F7**: When `configureENS` is called, the StrategyFactory shall store the ENS registrar, resolver, nameWrapper, parentNode, and ensDomain. If already configured, it shall revert.
-
-**REQ-F8**: When `createDeterministic(config, salt)` is called, the StrategyFactory shall deploy using `Clones.cloneDeterministic(salt)` and initialize. No ENS support.
-
-**REQ-F9**: The StrategyFactory shall implement ERC-1155 receiver interfaces to temporarily hold wrapped ENS names during the create flow.
+**CR-ADDR-03** The deposit address shall be stable across escrow implementation upgrades. Only the delegated logic shall change; the proxy address shall remain fixed.
 
 ---
 
-## YieldRedirector4626 Contract
+## 3. Claiming
 
-**REQ-Y1**: The YieldRedirector4626 shall implement ERC-4626 with `totalAssets()` returning principal (not vault value), keeping share price 1:1 with deposited assets.
+**CR-CLAIM-01** When a claimant submits a valid proof for an unclaimed identifier, the registry shall record `owners[id] = msg.sender`.
 
-**REQ-Y2**: When `initialize(sourceVault, yieldRecipient, initialOwner)` is called, the YieldRedirector4626 shall validate all addresses are non-zero, store sourceVault and yieldRecipient, init ERC-4626 with the source vault's asset, set name to `"YieldRedirector " + sourceVault.name()` and symbol to `"yR-" + sourceVault.symbol()`, and approve the source vault for unlimited spending.
+**CR-CLAIM-02** If an identifier is already claimed, then the registry shall revert the claim transaction.
 
-**REQ-Y3**: When `deposit` is called, the YieldRedirector4626 shall pull assets from the caller, deposit into sourceVault, increment principal, and mint shares to the receiver.
+**CR-CLAIM-03** If no verifier is registered for the requested namespace, then the registry shall revert the claim transaction.
 
-**REQ-Y4**: When `withdraw` is called, the YieldRedirector4626 shall decrement principal, burn shares, withdraw from sourceVault, and transfer assets to the receiver.
+**CR-CLAIM-04** If the submitted proof is invalid (wrong signer, expired, wrong claimant), then the registry shall revert the claim transaction.
 
-**REQ-Y5**: If withdraw amount exceeds principal, then the YieldRedirector4626 shall revert with `InsufficientPrincipal`.
-
-**REQ-Y6**: The YieldRedirector4626 shall calculate `surplus()` as `sourceVault.convertToAssets(sourceVault.balanceOf(this)) - principal`, floored at 0.
-
-**REQ-Y7**: When `harvest()` is called, the YieldRedirector4626 shall withdraw surplus from sourceVault to yieldRecipient, call `distribute(asset)` on the recipient, and emit `Harvest(amount, yieldRecipient)`.
-
-**REQ-Y8**: If surplus is 0 when `harvest` is called, then the YieldRedirector4626 shall revert with `NoYieldAvailable`.
-
-**REQ-Y9**: When `setYieldRecipient(newRecipient)` is called by the owner, the YieldRedirector4626 shall update yieldRecipient and emit `YieldRecipientUpdated(old, new)`. If newRecipient is zero, it shall revert.
-
-**REQ-Y10**: The YieldRedirector4626 shall use `ReentrancyGuard` on deposit, withdraw, and harvest.
+**CR-CLAIM-05** If the identifier is an alias, then the registry shall revert the claim transaction.
 
 ---
 
-## YieldRedirectorFactory Contract
+## 4. Escrow Deployment
 
-**REQ-YF1**: When `create(sourceVault, yieldRecipient, owner)` is called, the YieldRedirectorFactory shall deploy a minimal proxy clone, initialize it, and emit `YieldRedirectorCreated(redirector, sourceVault, yieldRecipient, owner)`.
+**CR-ESCROW-01** When an identifier's escrow has not yet been deployed, any caller may deploy it by calling `deployEscrow(id)`.
 
-**REQ-YF2**: When `createDeterministic(sourceVault, yieldRecipient, owner, salt)` is called, the YieldRedirectorFactory shall deploy using `Clones.cloneDeterministic(salt)` and initialize.
+**CR-ESCROW-02** If the escrow for an identifier has already been deployed, then `deployEscrow` shall revert.
 
----
-
-## SplitsWarehouse (External)
-
-**REQ-W1**: The Strategy shall call `warehouse.batchDeposit(receivers, token, amounts)` during distribution — sending ETH as `msg.value` for native token, or using `forceApprove` + `batchDeposit` for ERC-20.
-
-**REQ-W2**: Recipients shall withdraw via `warehouse.withdraw(owner, token)`. Token IDs follow ERC-6909: `uint256(uint160(tokenAddress))`.
+**CR-ESCROW-03** The registry shall deploy each escrow as a `BeaconProxy` pointing to the `UpgradeableBeacon` owned by the registry.
 
 ---
 
-## Indexer
+## 5. Escrow Withdrawals
 
-**REQ-I1**: When `StrategyCreated` is emitted, the Indexer shall fetch metadata from metadataURI, calculate feeBps from the first allocation as `(weight × 10000) / totalWeight`, store the strategy record with all metadata, store allocation records (version 1), and if sourceStrategy is non-zero, store a fork record and increment `timesForked` on the source.
+**CR-WITH-01** When `withdrawTo(token)` is called on a `ClaimableEscrow`, the escrow shall transfer all `token` balance to the current registered owner of its identifier.
 
-**REQ-I2**: When `Rebalanced` is emitted, the Indexer shall increment `allocationsVersion`, update metadata and metadataURI, and store new allocation records with the new version number.
+**CR-WITH-02** If the identifier is not yet claimed, then `withdrawTo` shall revert.
 
-**REQ-I3**: When `Distributed` is emitted, the Indexer shall store a distribution record with USD-normalized amount, and decrement the strategy balance.
+**CR-WITH-03** If the total balance of `token` (after pulling from the Splits Warehouse) is zero, then `withdrawTo` shall revert.
 
-**REQ-I4**: When `Payout` is emitted, the Indexer shall store a payout record and increment the recipient's warehouse balance and totalEarned.
+**CR-WITH-04** When the escrow has a non-trivial Splits Warehouse internal balance for `token`, the escrow shall call `warehouse.withdraw` before transferring to the owner.
 
-**REQ-I5**: When a `Transfer` event matches an incoming transfer to a known strategy, the Indexer shall store a transfer record (direction: "in"), increment strategy balance and totalReceived, and track the donor (insert if new, increment strategy uniqueDonors; update lastDonationAt and totalDonations if existing).
-
-**REQ-I6**: When a `Transfer` event matches an outgoing transfer from a known strategy, the Indexer shall store a transfer record (direction: "out").
-
-**REQ-I7**: When a `Transfer` event matches a withdrawal from SplitsWarehouse, the Indexer shall decrement the user's warehouse balance and increment totalClaimed.
-
-**REQ-I8**: When `YieldRedirectorCreated` is emitted, the Indexer shall read asset, name, and symbol from the redirector contract and store the yield_redirector record.
-
-**REQ-I9**: When `Harvest` is emitted, the Indexer shall store a harvest record with USD-normalized amount, and increment totalHarvested, harvestCount, and set lastHarvestAt on the redirector.
-
-**REQ-I10**: When `Deposit` or `Withdraw` is emitted on a YieldRedirector, the Indexer shall increment or decrement principal on the redirector record.
-
-**REQ-I11**: The Indexer shall expose `GET /api/strategies/trending` (query params: period, limit), `GET /api/stats` (protocol-wide aggregates), and `GET /api/strategies/:address/lineage` (fork tree).
-
-**REQ-I12**: The Indexer shall use Ponder's factory pattern to automatically discover and index new Strategy and YieldRedirector contracts as they are deployed.
+**CR-WITH-05** The registry shall allow anyone to call `withdrawTo` — the caller need not be the owner.
 
 ---
 
-## SDK
+## 6. Revocation
 
-**REQ-SDK1**: The CuratorSDK shall auto-configure a PublicClient and Indexer from the wallet's chain ID, falling back to chain 31337 if no wallet is provided.
+**CR-REV-01** When an identifier owner calls `revoke(namespace, canonicalString)`, the registry shall delete `owners[id]`, returning the identifier to unclaimed state.
 
-**REQ-SDK2**: The SDK shall provide `strategy.create(config)`, `strategy.getData(address)`, `strategy.balanceOf(address, token)`, `strategy.rebalance(address, allocations, metadataURI)`, `strategy.distribute(address, token)`, and `strategy.setENSName(address, label)`.
+**CR-REV-02** If `revoke` is called on an identifier that is an alias, then the registry shall revert.
 
-**REQ-SDK3**: The SDK shall provide `warehouse.withdraw(owner, token)` and `warehouse.balanceOf(owner, token)`.
-
-**REQ-SDK4**: The SDK shall provide `yieldRedirector.create(sourceVault, yieldRecipient, owner)`, `yieldRedirector.harvest(address)`, `yieldRedirector.surplus(address)`, `yieldRedirector.principal(address)`, `yieldRedirector.sourceVaultValue(address)`, and `yieldRedirector.setYieldRecipient(address, newRecipient)`.
-
-**REQ-SDK5**: The SDK shall provide `ens.available(label)`, `ens.register(label, owner?)`, `ens.getAddress(name)`, `ens.setAddress(name, address)`, `ens.setReverseRecord(name)`, `ens.setReverseNameForAddr(addr, name)`, and `ens.registerWithAddress(label, resolveToAddress, owner?)`.
-
-**REQ-SDK6**: The SDK shall provide a `CuratorProvider` React context that creates a CuratorSDK instance from the connected wagmi wallet and provides it via `useCuratorSDK()`.
-
-**REQ-SDK7**: The SDK shall provide React query hooks for all indexer entities: `useStrategies`, `useStrategyById`, `useDistributions`, `usePayouts`, `useDonors`, `useStrategyBalances`, `useForks`, `useWarehouseBalances`, `useWarehouseBalance`, `useYieldRedirectors`, `useYieldRedirectorById`, `useHarvests`, `useTrendingStrategies`, `useProtocolStats`, `useStrategyLineage`.
-
-**REQ-SDK8**: The SDK shall provide React mutation hooks: `useCreateStrategy`, `useRebalanceStrategy`, `useDistributeStrategy`, `useSetENSName`, `useWithdrawFromWarehouse`, `useCreateYieldRedirector`, `useHarvestYield`.
-
-**REQ-SDK9**: When a mutation hook succeeds, the SDK shall invalidate related query keys after a 3-second delay to allow indexer processing.
-
-**REQ-SDK10**: The SDK shall provide `useInvalidateENS()` which invalidates all ENS-related queries (both custom and wagmi's internal ENS queries) after a 1-second delay.
+**CR-REV-03** If `revoke` is called by an address that is not the current owner, then the registry shall revert.
 
 ---
 
-## Data Model
+## 7. Alias Linking
 
-**REQ-DM1**: The Indexer shall maintain the following entities: `strategy`, `allocation` (versioned), `distribution`, `payout`, `transfer`, `donor`, `strategy_balance` (per token), `fork`, `warehouse_balance` (per user per token), `yield_redirector`, `harvest`.
+**CR-LINK-01** When an owner calls `linkIds(primaryId, aliasIds)` and owns all supplied identifiers, the registry shall set `aliases[aliasId] = primaryId` for each alias.
 
-**REQ-DM2**: The `strategy` entity shall include: id, owner, sourceStrategy, metadataURI, metadata (JSON), feeRecipient, feeBps, ensLabel, allocationsVersion, timesForked, uniqueDonors, and timestamps.
+**CR-LINK-02** While an identifier has an alias link, `ownerOf(aliasId)` shall return the owner of the primary identifier.
 
-**REQ-DM3**: The `allocation` entity shall include: id, strategyId, recipient, weight, label, version, and createdAt. Current allocations are those where `version == strategy.allocationsVersion`.
+**CR-LINK-03** If `primaryId` is itself an alias, then `linkIds` shall revert.
 
-**REQ-DM4**: The `yield_redirector` entity shall include: id, owner, sourceVault, yieldRecipient, asset, name, symbol, principal, totalHarvested, totalHarvestedUSD, harvestCount, lastHarvestAt, and timestamps.
+**CR-LINK-04** When an owner calls `unlinkIds(primaryId, aliasIds)`, the registry shall delete each alias entry and restore independent ownership.
 
-**REQ-DM5**: All USD amounts shall use 18-decimal fixed-point arithmetic: `amountUSD = (amount × tokenPriceScaled) / (10 ^ decimals)`.
+---
+
+## 8. Verification
+
+**CR-VER-01** The registry shall delegate ownership verification to a verifier contract registered for the relevant namespace.
+
+**CR-VER-02** The registry owner shall be able to register, replace, or remove a verifier for any namespace via `setVerifier`.
+
+**CR-VER-03** An oracle verifier shall reject a proof where `block.timestamp >= expiry`.
+
+**CR-VER-04** An oracle verifier shall reject a proof where the recovered signer does not match `trustedSigner`.
+
+**CR-VER-05** An oracle verifier shall bind proofs to the `(registryAddress, chainId)` pair via an EIP-712 domain separator to prevent cross-deployment and cross-chain replay.
+
+**CR-VER-06** The registry owner shall be able to rotate the trusted signer on any oracle verifier via `setTrustedSigner`.
+
+---
+
+## 9. Escrow Upgradeability
+
+**CR-UPG-01** The registry shall own an `UpgradeableBeacon` to which all `ClaimableEscrow` proxies delegate.
+
+**CR-UPG-02** Only the registry owner shall be able to upgrade the escrow implementation via the beacon.
+
+**CR-UPG-03** After an upgrade, all existing escrow proxy addresses shall remain unchanged.
+
+---
+
+## 10. Ownership Resolution
+
+**CR-OWN-01** `ownerOf(id)` shall follow at most one level of alias indirection.
+
+**CR-OWN-02** `ownerOf(id)` shall return `address(0)` for unclaimed identifiers.
+
+---
+
+## 11. Indexer
+
+**REQ-I1** When `Claimed` is emitted, the Indexer shall upsert an `identifier` record with `namespace`, `canonicalString`, `owner`, and `claimedAt`.
+
+**REQ-I2** When `Revoked` is emitted, the Indexer shall set `owner = null` and record `revokedAt` on the identifier.
+
+**REQ-I3** When `Linked` is emitted, the Indexer shall insert an `identifier_alias` record linking `aliasId` to `primaryId`.
+
+**REQ-I4** When `Unlinked` is emitted, the Indexer shall delete the corresponding `identifier_alias` record.
+
+**REQ-I5** When `EscrowDeployed` is emitted, the Indexer shall update the identifier record with `escrowAddress`.
+
+**REQ-I6** When `Withdrawn` is emitted on a `ClaimableEscrow`, the Indexer shall insert a `withdrawal` record and link it to its identifier via `escrowAddress`.
+
+**REQ-I7** The Indexer shall use Ponder's factory pattern to automatically discover and index new `ClaimableEscrow` proxies as they are deployed from the registry.
+
+**REQ-I8** The Indexer shall expose `GET /api/stats`, `GET /api/identifiers/:namespace`, and `GET /api/owner/:address/identifiers`.
+
+---
+
+## 12. SDK
+
+**REQ-SDK1** The `CanonicalRegistrySDK` shall auto-configure a `PublicClient` and `Indexer` from the wallet's chain ID, falling back to chain `31337` if no wallet is provided.
+
+**REQ-SDK2** The SDK shall provide pure, RPC-free utilities: `toId(namespace, canonicalString)`, `canonicalise(value)`, `parseUrl(input)`, `formatIdentifier(namespace, canonicalString)`, and `parseIdentifier(identifier)`.
+
+**REQ-SDK3** The SDK shall provide `registry.ownerOf(id)`, `registry.predictAddress(id)`, `registry.claim(namespace, canonicalString, proof)`, `registry.revoke(namespace, canonicalString)`, `registry.linkIds(primaryId, aliasIds)`, `registry.unlinkIds(primaryId, aliasIds)`, `registry.deployEscrow(id)`, `registry.isEscrowDeployed(id)`, `registry.resolveIdentifier(namespace, canonicalString, token)`, and `registry.setVerifier(namespace, verifier)`.
+
+**REQ-SDK4** The SDK shall provide `escrow.withdrawTo(escrowAddress, token)`.
+
+**REQ-SDK5** The SDK shall provide `warehouse.withdraw(owner, token)` and `warehouse.balanceOf(owner, token)`.
+
+**REQ-SDK6** The SDK shall provide a `CanonicalRegistryProvider` React context and `useCanonicalRegistrySDK()` hook.
+
+**REQ-SDK7** The SDK shall provide React query hooks: `useIdentifier`, `useIdentifiers`, `useAliases`, `useEscrowWithdrawals`, `useRegistryStats`, `useWarehouseBalance`, `useWarehouseBalances`.
+
+**REQ-SDK8** The SDK shall provide React mutation hooks: `useClaim`, `useRevoke`, `useLinkIds`, `useUnlinkIds`, `useDeployEscrow`, `useWithdrawTo`, `useWithdrawFromWarehouse`.
+
+**REQ-SDK9** When a mutation hook succeeds, the SDK shall invalidate related query keys after a delay to allow indexer processing.
+
+---
+
+## 13. Data Model
+
+**REQ-DM1** The Indexer shall maintain the following entities: `identifier`, `identifier_alias`, `withdrawal`, `warehouse_balance`.
+
+**REQ-DM2** The `identifier` entity shall include: `id` (bytes32), `namespace`, `canonicalString`, `owner` (nullable), `escrowAddress` (nullable), `claimedAt` (nullable), `revokedAt` (nullable), `createdAt`.
+
+**REQ-DM3** The `identifier_alias` entity shall include: `id`, `aliasId`, `primaryId`, `linkedAt`.
+
+**REQ-DM4** The `withdrawal` entity shall include: `id`, `identifierId`, `token`, `to`, `amount`, `timestamp`, `blockNumber`, `txHash`.

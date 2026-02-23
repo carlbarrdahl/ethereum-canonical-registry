@@ -3,8 +3,8 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@workspace/ui/components/alert";
-import { Button } from "@workspace/ui/components/button";
+} from "@ethereum-canonical-registry/ui/components/alert";
+import { Button } from "@ethereum-canonical-registry/ui/components/button";
 
 interface ErrorBannerProps {
   title?: string;

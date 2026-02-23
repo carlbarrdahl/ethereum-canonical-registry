@@ -1,6 +1,6 @@
 "use client";
 
-import { useCuratorSDK } from "../components/provider";
+import { useCanonicalRegistrySDK } from "../components/provider";
 import {
   useMutation,
   useQuery,
@@ -26,7 +26,7 @@ export function useWarehouseBalances(
   variables: QueryVariables<WarehouseBalanceFilter> = {},
   opts?: QueryOptions,
 ): UseQueryResult<Page<WarehouseBalance> | null> {
-  const { sdk } = useCuratorSDK();
+  const { sdk } = useCanonicalRegistrySDK();
   return useQuery({
     queryKey: ["warehouseBalances", variables],
     queryFn: () => sdk?.indexer?.warehouseBalance.query(variables) ?? null,
@@ -40,7 +40,7 @@ export function useWarehouseBalance(
   token: Address | undefined,
   opts?: QueryOptions,
 ): UseQueryResult<WarehouseBalance | null> {
-  const { sdk } = useCuratorSDK();
+  const { sdk } = useCanonicalRegistrySDK();
   return useQuery({
     queryKey: ["warehouseBalance", user, token],
     queryFn: async () => {
@@ -67,7 +67,7 @@ export function useWithdrawFromWarehouse(
     { owner: Address; token: Address }
   >,
 ) {
-  const { sdk } = useCuratorSDK();
+  const { sdk } = useCanonicalRegistrySDK();
   const queryClient = useQueryClient();
 
   return useMutation({

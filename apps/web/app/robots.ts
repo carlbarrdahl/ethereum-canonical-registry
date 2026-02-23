@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/api/", "/_next/"],
     },
-    sitemap: "https://curate.fund/sitemap.xml",
+    sitemap: "https://canonical-registry.com/sitemap.xml",
   };
 }

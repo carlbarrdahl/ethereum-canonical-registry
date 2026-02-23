@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@workspace/ui/components/card";
+import { Card, CardContent } from "@ethereum-canonical-registry/ui/components/card";
 
 interface StatCardProps {
   label: string;

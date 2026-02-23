@@ -2,7 +2,7 @@ import { Context } from "ponder:registry";
 import { Address, erc20Abi } from "viem";
 import pRetry from "p-retry";
 import { cachedFetchWithRetry } from "./fetch";
-import { isNativeToken } from "@workspace/sdk";
+import { isNativeToken } from "@ethereum-canonical-registry/sdk";
 
 const MAX_RETRY_COUNT = 5;
 

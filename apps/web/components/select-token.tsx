@@ -7,7 +7,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@workspace/ui/components/select";
+} from "@ethereum-canonical-registry/ui/components/select";
 import { TokenSymbol } from "@/components/token-amount";
 
 export interface TokenOption {

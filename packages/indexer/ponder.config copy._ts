@@ -8,7 +8,7 @@ import {
 import { type Abi, parseAbiItem } from "viem";
 import { hardhat, sepolia, mainnet } from "viem/chains";
 import { http } from "viem";
-import { getTokenAddresses, NATIVE_TOKEN } from "@workspace/sdk";
+import { getTokenAddresses, NATIVE_TOKEN } from "@ethereum-canonical-registry/sdk";
 
 import deployments from "./abis/deployments.json";
 

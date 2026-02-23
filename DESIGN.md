@@ -1,11 +1,11 @@
 # Design Principles
 
-Project-specific UI/UX patterns for support.eth curator. Follow these when building or redesigning pages.
+Project-specific UI/UX patterns. Follow these when building or redesigning pages.
 
 ## Stack
 
 - **Framework**: Next.js (App Router, `"use client"` components)
-- **Components**: Shadcn UI via `@workspace/ui/components/*`
+- **Components**: Shadcn UI via `@ethereum-canonical-registry/ui/components/*`
 - **Styling**: Tailwind CSS v4, OKLCH color tokens, `cn()` utility
 - **Fonts**: Geist (sans), Geist Mono (mono) — do not change
 - **Icons**: Lucide React

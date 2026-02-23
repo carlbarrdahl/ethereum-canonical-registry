@@ -6,7 +6,7 @@ import { type Address } from "viem";
 import { toast } from "sonner";
 import Link from "next/link";
 
-import { Button } from "@workspace/ui/components/button";
+import { Button } from "@ethereum-canonical-registry/ui/components/button";
 import {
   Table,
   TableBody,
@@ -14,22 +14,24 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@workspace/ui/components/table";
-import { Badge } from "@workspace/ui/components/badge";
+} from "@ethereum-canonical-registry/ui/components/table";
+import { Badge } from "@ethereum-canonical-registry/ui/components/badge";
 import {
   ArrowLeftIcon,
   CoinsIcon,
   Loader2Icon,
   WalletIcon,
   AlertCircleIcon,
+  LinkIcon,
 } from "lucide-react";
 
 import {
   useWarehouseBalances,
   useWithdrawFromWarehouse,
+  useIdentifiers,
   getTokenByAddress,
   isNativeToken,
-} from "@workspace/sdk";
+} from "@ethereum-canonical-registry/sdk";
 import { Amount } from "@/components/amount";
 
 export default function WalletPage() {
@@ -50,6 +52,14 @@ export default function WalletPage() {
 
   const { mutateAsync: withdraw, isPending: isWithdrawing } =
     useWithdrawFromWarehouse();
+
+  const { data: identifiersData, isPending: isIdentifiersPending } =
+    useIdentifiers(
+      { where: address ? { owner: address.toLowerCase() } : undefined },
+      { enabled: Boolean(address) },
+    );
+
+  const identifiers = identifiersData?.items ?? [];
 
   const balances = balancesData?.items ?? [];
   const hasBalances =
@@ -129,6 +139,100 @@ export default function WalletPage() {
           <Loader2Icon className="w-4 h-4 animate-spin" />
           Loading your balances...
         </div>
+      )}
+
+      {/* Identifiers */}
+      {address && (
+        <section className="space-y-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight">
+                Connected Identifiers
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Identifiers linked to your wallet in the canonical registry.
+              </p>
+            </div>
+            {identifiers.length > 0 && (
+              <Badge variant="secondary" className="text-xs shrink-0">
+                {identifiers.length} identifier
+                {identifiers.length !== 1 ? "s" : ""}
+              </Badge>
+            )}
+          </div>
+
+          {isIdentifiersPending ? (
+            <div className="rounded-lg border py-12 flex items-center justify-center gap-2 text-muted-foreground">
+              <Loader2Icon className="w-4 h-4 animate-spin" />
+              Loading identifiers...
+            </div>
+          ) : identifiers.length === 0 ? (
+            <div className="rounded-lg border py-12 text-center space-y-1.5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted mx-auto mb-3">
+                <LinkIcon className="w-4 h-4 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium text-muted-foreground">
+                No identifiers found
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Prove ownership of an identifier to link it to your wallet.
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-lg border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Identifier</TableHead>
+                    <TableHead>Address</TableHead>
+                    <TableHead>Namespace</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Claimed</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {identifiers.map((identifier) => (
+                    <TableRow key={identifier.id}>
+                      <TableCell className="font-mono text-sm">
+                        {identifier.canonicalString}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {identifier.id.slice(0, 6)}…{identifier.id.slice(-4)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {identifier.namespace}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {identifier.revokedAt ? (
+                          <Badge variant="destructive" className="text-xs">
+                            Revoked
+                          </Badge>
+                        ) : identifier.claimedAt ? (
+                          <Badge variant="default" className="text-xs">
+                            Claimed
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">
+                            Unclaimed
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right text-sm text-muted-foreground">
+                        {identifier.claimedAt
+                          ? new Date(
+                              Number(identifier.claimedAt) * 1000,
+                            ).toLocaleDateString()
+                          : "--"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </section>
       )}
 
       {/* Balances */}

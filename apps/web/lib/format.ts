@@ -1,4 +1,4 @@
-// Re-export shared utilities from @workspace/ui
+// Re-export shared utilities from @ethereum-canonical-registry/ui
 
 import { enUS as locale } from "date-fns/locale";
 import {

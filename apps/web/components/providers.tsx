@@ -4,9 +4,9 @@ import { PropsWithChildren } from "react";
 import { createConfig, http, useWalletClient, WagmiProvider } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import { CuratorProvider } from "@workspace/sdk";
+import { CanonicalRegistryProvider } from "@ethereum-canonical-registry/sdk";
 import { hardhat, sepolia } from "viem/chains";
-import { Toaster } from "@workspace/ui/components/sonner";
+import { Toaster } from "@ethereum-canonical-registry/ui/components/sonner";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import {
   RainbowKitProvider,
@@ -72,10 +72,10 @@ export function Providers({ children }: PropsWithChildren) {
           enableColorScheme
         >
           <RainbowKitProvider>
-            <Curator>
+            <Registry>
               {children}
               <Toaster />
-            </Curator>
+            </Registry>
           </RainbowKitProvider>
         </NextThemesProvider>
       </QueryClientProvider>
@@ -83,12 +83,12 @@ export function Providers({ children }: PropsWithChildren) {
   );
 }
 
-function Curator({ children }: PropsWithChildren) {
+function Registry({ children }: PropsWithChildren) {
   const { data: client } = useWalletClient();
 
   return (
-    <CuratorProvider client={client} defaultChain={defaultChain.id}>
+    <CanonicalRegistryProvider client={client} defaultChain={defaultChain.id}>
       {children}
-    </CuratorProvider>
+    </CanonicalRegistryProvider>
   );
 }

@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { type Address } from "viem";
 import { LayersIcon, UsersIcon, GitForkIcon } from "lucide-react";
-import { ENS_DOMAIN } from "@workspace/sdk";
-import { Badge } from "@workspace/ui/components/badge";
+import { ENS_DOMAIN } from "@ethereum-canonical-registry/sdk";
+import { Badge } from "@ethereum-canonical-registry/ui/components/badge";
 import { EnsName } from "@/components/ens";
 import { USDAmount } from "@/components/amount";
 import { getColorForAddress } from "@/lib/color-utils";
 import { Markdown } from "@/components/markdown";
 import { FundDialog } from "@/app/strategies/[id]/_components/fund-dialog";
-import type { Strategy } from "@workspace/sdk";
+import type { Strategy } from "@ethereum-canonical-registry/sdk";
 
 interface FeaturedStrategyCardProps {
   strategy: Strategy;

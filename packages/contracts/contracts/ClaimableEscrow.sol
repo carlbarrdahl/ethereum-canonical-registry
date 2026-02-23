@@ -52,7 +52,7 @@ contract ClaimableEscrow is Initializable {
         require(owner != address(0), "ClaimableEscrow: not yet claimed");
 
         // Pull any Splits Warehouse balance to this contract first.
-        uint256 warehouseAmount = warehouse.balanceOf(address(this), token);
+        uint256 warehouseAmount = warehouse.balanceOf(address(this), uint256(uint160(token)));
         if (warehouseAmount > 0) {
             warehouse.withdraw(address(this), token, warehouseAmount);
         }

@@ -4,7 +4,7 @@ import { Pie, PieChart, Cell, Tooltip as RechartsTooltip } from "recharts";
 import {
   ChartContainer,
   type ChartConfig,
-} from "@workspace/ui/components/chart";
+} from "@ethereum-canonical-registry/ui/components/chart";
 
 const COLORS = [
   { bg: "bg-blue-400", fill: "hsl(217, 91%, 60%)" },

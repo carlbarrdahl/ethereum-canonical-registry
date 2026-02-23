@@ -211,7 +211,7 @@ async function main(): Promise<void> {
 
   const repoRoot = path.resolve(__dirname, "..", "..", "..");
   // Single source of truth: packages/contracts/deployments.json
-  // Other packages import from @workspace/contracts/deployments.json
+  // Other packages import from @ethereum-canonical-registry/contracts/deployments.json
   const defaultDestinations = [
     path.join(repoRoot, "packages", "contracts", "deployments.json"),
   ];

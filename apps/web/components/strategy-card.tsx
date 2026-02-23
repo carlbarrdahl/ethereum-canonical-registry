@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { UsersIcon, LayersIcon, GitForkIcon } from "lucide-react";
-import { ENS_DOMAIN } from "@workspace/sdk";
+import { ENS_DOMAIN } from "@ethereum-canonical-registry/sdk";
 import { truncate } from "@/lib/truncate";
 import { EnsName } from "@/components/ens";
 import { USDAmount } from "@/components/amount";
@@ -10,7 +10,7 @@ import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
-} from "@workspace/ui/components/hover-card";
+} from "@ethereum-canonical-registry/ui/components/hover-card";
 import type { Address } from "viem";
 
 interface StrategyCardProps {

@@ -1,12 +1,12 @@
 import { ImageIcon } from "lucide-react";
 import { ChangeEvent, type ComponentProps, useRef } from "react";
 import { Controller, useFormContext } from "react-hook-form";
-import { Button } from "@workspace/ui/components/button";
+import { Button } from "@ethereum-canonical-registry/ui/components/button";
 import { useMutation } from "@tanstack/react-query";
 import { useImageCompression } from "@/hooks/use-image-compression";
 import { upload } from "@vercel/blob/client";
 import { toast } from "sonner";
-import { cn } from "@workspace/ui/lib/utils";
+import { cn } from "@ethereum-canonical-registry/ui/lib/utils";
 
 export function ImageUpload({
   name,

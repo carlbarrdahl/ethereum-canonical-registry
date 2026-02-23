@@ -2,7 +2,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { AlertCircleIcon } from "lucide-react";
-import { Button } from "@workspace/ui/components/button";
+import { Button } from "@ethereum-canonical-registry/ui/components/button";
 
 interface Props {
   children?: ReactNode;

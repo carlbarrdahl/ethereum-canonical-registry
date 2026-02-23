@@ -1,4 +1,4 @@
-import { Skeleton } from "@workspace/ui/components/skeleton";
+import { Skeleton } from "@ethereum-canonical-registry/ui/components/skeleton";
 
 export function StrategyCardSkeleton() {
   return (

@@ -1,130 +1,138 @@
 ---
-title: Curator Studio
-description: Permissionless, non-custodial capital allocation protocol for transparent public goods funding
+title: Canonical Registry
+description: Map off-chain identifiers to Ethereum addresses — permissionlessly fund any GitHub repo or DNS domain before it's even claimed
 ---
 
-# Curator Studio
+# Canonical Registry
 
-Curator Studio is a **permissionless, non-custodial capital allocation protocol** that enables curators to create and operate transparent funding strategies. Capital providers fund strategies matching their values while maintaining full visibility into allocation rules, capital flows, and curator fees.
+The **Canonical Registry** maps off-chain identifiers (GitHub repositories, DNS domains) to Ethereum addresses. Anyone can send ERC-20 tokens to a deterministic deposit address for any identifier — even before the owner has claimed it. When the owner proves ownership, they can withdraw accumulated funds.
 
 ## How It Works
 
 ```
-  Curator creates Strategy
-         │
-         ▼
-  ┌─────────────────────────┐
-  │       STRATEGY          │
-  │  ┌──────────────────┐   │
-  │  │ 40% → Project A  │   │         Donor funds Strategy
-  │  │ 35% → Project B  │◀──────────────────────────────────
-  │  │ 20% → Project C  │   │
-  │  │  5% → Curator    │   │
-  │  └──────────────────┘   │
-  └───────────┬─────────────┘
-              │
-         distribute()
-              │
-              ▼
-  ┌─────────────────────────┐
-  │      WAREHOUSE          │         Recipients withdraw
-  │   (holds all funds)     │─────────────────────────────▶
-  └─────────────────────────┘
+  Anyone computes deposit address (no RPC call needed)
+             │
+             ▼
+  ┌─────────────────────────────────┐
+  │   github:org/repo               │
+  │   0x4a3b...  (ClaimableEscrow)  │◀── Funders send tokens here
+  └─────────────────────────────────┘
+             │
+  Owner proves GitHub/DNS ownership
+             │
+             ▼
+  CanonicalRegistry records owner
+             │
+             ▼
+  withdrawTo(token) → funds sent to owner
 ```
 
-1. **Create**: Curator deploys a strategy with weighted allocations
-2. **Fund**: Donors send tokens directly to the strategy address (or via ENS name)
-3. **Distribute**: Anyone triggers distribution — funds route to warehouse
-4. **Claim**: Recipients withdraw from warehouse at their convenience
+1. **Compute**: Anyone derives the deterministic deposit address for any identifier — pure local calculation, no wallet needed
+2. **Fund**: Send ERC-20 tokens directly to the deposit address at any time — before or after claiming
+3. **Claim**: Owner submits a verifiable proof (signed by the oracle backend after GitHub OAuth or DNS TXT check)
+4. **Withdraw**: Anyone calls `withdrawTo(token)` — funds always go to the registered owner
 
 ## Value Proposition
 
-| Stakeholder    | Value                                                                               |
-| -------------- | ----------------------------------------------------------------------------------- |
-| **Curators**   | Express allocation intent on-chain. Earn fees. Build verifiable reputation.         |
-| **Donors**     | Fund strategies matching your values. Full transparency. No custody risk.           |
-| **Recipients** | Receive funds from curated strategies. Pull when ready. No action required to earn. |
-| **Ecosystem**  | Auditable marketplace of funding destinations. Composable primitives.               |
+| Stakeholder | Value |
+| --- | --- |
+| **Funders** | Send tokens to any open-source project or domain today, even if the owner hasn't set up a wallet yet |
+| **Maintainers** | Claim accumulated funds any time after proving ownership — no setup required in advance |
+| **Ecosystem** | Canonical, collision-free namespace for any off-chain identity on Ethereum |
 
 ## Getting Started
 
 ### SDK Setup
 
-The SDK auto-configures based on the connected wallet's chain:
-
 ```typescript
-import { CuratorSDK } from "@workspace/sdk";
+import { CanonicalRegistrySDK } from "@ethereum-canonical-registry/sdk";
 
-const sdk = new CuratorSDK(walletClient);
+const sdk = new CanonicalRegistrySDK(walletClient);
 ```
 
 Supported chains: `31337` (Hardhat), `11155111` (Sepolia), `1` (Mainnet — planned).
 
-### Create a Strategy
+### Compute a Deposit Address (No RPC Needed)
 
 ```typescript
-const { strategy } = await sdk.strategy.create({
-  owner: "0x...",
-  allocations: [
-    { recipient: "0xProjectA...", weight: 40n, label: "Project A" },
-    { recipient: "0xProjectB...", weight: 35n, label: "Project B" },
-    { recipient: "0xProjectC...", weight: 20n, label: "Project C" },
-    { recipient: "0xCurator...", weight: 5n, label: "Curator Fee" },
-  ],
-  metadataURI: "https://...",
-  sourceStrategy: "0x0000...",
-  ensLabel: "my-strategy", // optional — registers my-strategy.support.eth
-});
+import { toId, canonicalise } from "@ethereum-canonical-registry/sdk";
+
+// Deterministic — same result anywhere, no RPC call
+const id = toId("github", canonicalise("org/repo"));
+const depositAddress = await sdk.registry.predictAddress(id);
 ```
 
-### Fund and Distribute
+### Fund an Identifier
 
 ```typescript
-// Anyone sends ERC-20 tokens to the strategy address
-await tokenContract.transfer(strategyAddress, amount);
+// Send tokens directly to the deposit address from any wallet
+await tokenContract.transfer(depositAddress, amount);
+```
 
-// Anyone triggers distribution
-await sdk.strategy.distribute(strategyAddress, tokenAddress);
+### Claim and Withdraw
 
-// Recipients withdraw from warehouse
-await sdk.warehouse.withdraw(recipientAddress, tokenAddress);
+```typescript
+// 1. Claim with a proof from the oracle signing service
+await sdk.registry.claim("github", "org/repo", proofBytes);
+
+// 2. Withdraw accumulated funds to the registered owner
+const escrowAddress = await sdk.registry.predictAddress(id);
+await sdk.escrow.withdrawTo(escrowAddress, tokenAddress);
+```
+
+### Parse URLs
+
+```typescript
+import { parseUrl } from "@ethereum-canonical-registry/sdk";
+
+// Accepts GitHub URLs and DNS domains
+parseUrl("https://github.com/org/repo");
+// → { namespace: "github", canonicalString: "org/repo", formatted: "github:org/repo" }
+
+parseUrl("example.com");
+// → { namespace: "dns", canonicalString: "example.com", formatted: "dns:example.com" }
 ```
 
 ### React Hooks
 
-Wrap your app with `CuratorProvider`, then use hooks:
+Wrap your app with `CanonicalRegistryProvider`, then use hooks:
 
 ```tsx
-import { CuratorProvider, useStrategies, useCreateStrategy } from "@workspace/sdk";
+import {
+  CanonicalRegistryProvider,
+  useIdentifier,
+  useClaim,
+} from "@ethereum-canonical-registry/sdk";
 
 function App() {
-  return <CuratorProvider>{/* ... */}</CuratorProvider>;
+  return <CanonicalRegistryProvider>{/* ... */}</CanonicalRegistryProvider>;
 }
 
-function StrategiesList() {
-  const { data, isPending } = useStrategies({
-    orderBy: "timesForked",
-    orderDirection: "desc",
-    limit: 10,
-  });
+function IdentifierCard({ id }: { id: `0x${string}` }) {
+  const { data } = useIdentifier(id);
+  const claim = useClaim();
 
-  if (isPending) return <div>Loading...</div>;
-  return data?.items.map(s => <div key={s.id}>{s.metadata?.title}</div>);
+  return (
+    <div>
+      <p>Owner: {data?.owner ?? "Unclaimed"}</p>
+      <p>Deposit: {data?.escrowAddress}</p>
+    </div>
+  );
 }
 ```
 
 ## Monorepo Structure
 
 ```
-curator/
+ethereum-canonical-registry/
 ├── apps/
-│   ├── web/          # Next.js 16 frontend (@workspace/web)
+│   ├── web/          # Next.js frontend (@ethereum-canonical-registry/web)
 │   └── docs/         # Fumadocs documentation site
 ├── packages/
-│   ├── contracts/    # Solidity smart contracts — Hardhat (@workspace/contracts)
-│   ├── indexer/      # Ponder event indexer (@workspace/indexer)
-│   ├── sdk/          # TypeScript SDK + React hooks (@workspace/sdk)
-│   └── ui/           # Shared Shadcn UI components (@workspace/ui)
+│   ├── contracts/    # Solidity smart contracts — Hardhat (@ethereum-canonical-registry/contracts)
+│   ├── indexer/      # Ponder event indexer (@ethereum-canonical-registry/indexer)
+│   ├── sdk/          # TypeScript SDK + React hooks (@ethereum-canonical-registry/sdk)
+│   └── ui/           # Shared Shadcn UI components (@ethereum-canonical-registry/ui)
 └── package.json      # pnpm workspaces + Turborepo
 ```
 
@@ -133,7 +141,7 @@ curator/
 import { Card, Cards } from "fumadocs-ui/components/card";
 
 <Cards>
-  <Card title="Concepts" href="/docs/concepts" description="Mental model — strategies, warehouse, yield, ENS" />
+  <Card title="Concepts" href="/docs/concepts" description="Mental model — identifiers, namespaces, verifiers, escrows, aliases" />
   <Card title="Architecture" href="/docs/architecture" description="System design, capital flows, security" />
   <Card title="Requirements" href="/docs/requirements" description="EARS requirements specification" />
 </Cards>

@@ -31,8 +31,8 @@ export default buildModule("DeployModuleSepolia", (m) => {
     admin,
   ]);
 
-  m.call(registry, "setVerifier", ["dns", dnsVerifier]);
-  m.call(registry, "setVerifier", ["github", gitHubVerifier]);
+  m.call(registry, "setVerifier", ["dns", dnsVerifier], { id: "SetDnsVerifier" });
+  m.call(registry, "setVerifier", ["github", gitHubVerifier], { id: "SetGitHubVerifier" });
 
   const testTokensModule = m.useModule(TestTokensModule);
 

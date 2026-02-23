@@ -1,12 +1,10 @@
 {
-  "title": "Curator Studio",
+  "title": "Canonical Registry",
   "pages": [
     "index",
     "concepts",
     "architecture",
-    "requirements",
-    "status",
-    "ecosystem-stakeholders",
-    "oss-foundations"
+    "requirements"
+    
   ]
 }

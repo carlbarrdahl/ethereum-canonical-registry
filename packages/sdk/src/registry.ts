@@ -4,8 +4,17 @@ import {
   type WalletClient,
   type PublicClient,
   getContract,
+  zeroAddress,
 } from "viem";
 import { writeAndWait } from "./lib/tx";
+import { canonicalise, toId } from "./utils";
+
+export type IdentifierState = {
+  id: `0x${string}`;
+  depositAddress: Address;
+  owner: Address | null;
+  balance: bigint;
+};
 
 type ChainDeployments = {
   CanonicalRegistry: { address: string; abi: unknown };
@@ -29,30 +38,17 @@ export function createRegistryMethods(
 
   return {
     /**
-     * Compute the bytes32 id for a (namespace, canonicalString) pair.
-     */
-    toId: async (
-      namespace: string,
-      canonicalString: string,
-    ): Promise<`0x${string}`> => {
-      const contract = getContract({
-        address: registryAddress,
-        abi: registryAbi,
-        client: { public: publicClient },
-      });
-      return (contract as any).read.toId([namespace, canonicalString]);
-    },
-
-    /**
      * Get the registered owner of an identifier (resolves through aliases).
+     * Returns null if unclaimed.
      */
-    ownerOf: async (id: `0x${string}`): Promise<Address> => {
+    ownerOf: async (id: `0x${string}`): Promise<Address | null> => {
       const contract = getContract({
         address: registryAddress,
         abi: registryAbi,
         client: { public: publicClient },
       });
-      return (contract as any).read.ownerOf([id]);
+      const owner: Address = await (contract as any).read.ownerOf([id]);
+      return owner === zeroAddress ? null : owner;
     },
 
     /**
@@ -160,6 +156,84 @@ export function createRegistryMethods(
         { account: wallet.account! },
       );
       return writeAndWait(wallet, hash);
+    },
+
+    /**
+     * Compute the deterministic identifier for a namespace + canonical string.
+     */
+    toId: (namespace: string, canonicalString: string): `0x${string}` => {
+      return toId(namespace, canonicalString);
+    },
+
+    /**
+     * Check whether the ClaimableEscrow for an identifier has been deployed.
+     * Returns false if the deposit address has no code (not yet deployed).
+     * The registry deploys it automatically during claim(), but funders can
+     * send tokens before it's deployed — the address is always the same.
+     */
+    isEscrowDeployed: async (id: `0x${string}`): Promise<boolean> => {
+      const contract = getContract({
+        address: registryAddress,
+        abi: registryAbi,
+        client: { public: publicClient },
+      });
+      const depositAddress: Address = await (contract as any).read.predictAddress([id]);
+      const code = await publicClient.getBytecode({ address: depositAddress });
+      return code !== undefined && code !== "0x";
+    },
+
+    /**
+     * Resolve the full state of an identifier: owner, deposit address, and
+     * ERC-20 balance — all in a single parallel batch of RPC calls.
+     *
+     * @example
+     * const state = await sdk.registry.resolveIdentifier("github", "org/repo", tokenAddress)
+     * // state.depositAddress — where funders should send tokens
+     * // state.owner          — null if unclaimed
+     * // state.balance        — claimable token balance at the deposit address
+     */
+    resolveIdentifier: async (
+      namespace: string,
+      rawCanonicalString: string,
+      token: Address,
+    ): Promise<IdentifierState> => {
+      const cs = canonicalise(rawCanonicalString);
+      const id = toId(namespace, cs);
+
+      const registryContract = getContract({
+        address: registryAddress,
+        abi: registryAbi,
+        client: { public: publicClient },
+      });
+
+      const erc20Abi = [
+        {
+          name: "balanceOf",
+          type: "function",
+          stateMutability: "view",
+          inputs: [{ name: "account", type: "address" }],
+          outputs: [{ name: "", type: "uint256" }],
+        },
+      ] as const;
+
+      const depositAddress: Address = await (registryContract as any).read.predictAddress([id]);
+
+      const [ownerRaw, balance] = await Promise.all([
+        (registryContract as any).read.ownerOf([id]) as Promise<Address>,
+        publicClient.readContract({
+          address: token,
+          abi: erc20Abi,
+          functionName: "balanceOf",
+          args: [depositAddress],
+        }),
+      ]);
+
+      return {
+        id,
+        depositAddress,
+        owner: ownerRaw === zeroAddress ? null : ownerRaw,
+        balance,
+      };
     },
   };
 }

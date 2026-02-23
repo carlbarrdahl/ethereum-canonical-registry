@@ -1,6 +1,6 @@
 "use client";
 
-import { useCuratorSDK } from "../components/provider";
+import { useCanonicalRegistrySDK } from "../components/provider";
 import { useMutation, type UseMutationOptions } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { Address } from "viem";
@@ -13,7 +13,7 @@ export function useWithdrawTo(
     { escrowAddress: Address; token: Address }
   >,
 ) {
-  const { sdk } = useCuratorSDK();
+  const { sdk } = useCanonicalRegistrySDK();
   const invalidate = useInvalidate();
 
   return useMutation({

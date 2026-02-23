@@ -2,8 +2,8 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@workspace/ui/components/tooltip";
-import { cn } from "@workspace/ui/lib/utils";
+} from "@ethereum-canonical-registry/ui/components/tooltip";
+import { cn } from "@ethereum-canonical-registry/ui/lib/utils";
 
 interface Segment {
   key: string;

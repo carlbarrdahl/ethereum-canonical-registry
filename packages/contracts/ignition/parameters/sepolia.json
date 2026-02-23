@@ -1,15 +1,7 @@
 {
-  "DeployModuleProduction": {
-    "splitsWarehouse": "0x8fb66F38cF86A3d5e8768f8F1754A24A6c661Fb8"
-  },
   "DeployModuleSepolia": {
     "splitsWarehouse": "0x8fb66F38cF86A3d5e8768f8F1754A24A6c661Fb8",
-    "reverseRegistrar": "0xA0a1AbcDAe1a2a4A2EF8e9113Ff0e02DD81DC0C6"
-  },
-  "Registrar": {
-    "nameWrapper": "0x0635513f179D50A207757E05759CbD106d7dFcE8",
-    "resolver": "0xE99638b40E4Fff0129D56f03b55b6bbC4BBE49b5",
-    "reverseRegistrar": "0xA0a1AbcDAe1a2a4A2EF8e9113Ff0e02DD81DC0C6",
-    "parentNode": "0xeacf3efb172eac3e87369ef96acf706f4ce70c0366f1da389a2db60209a0c86c"
+    "admin": "0x0000000000000000000000000000000000000000",
+    "trustedSigner": "0x0000000000000000000000000000000000000000"
   }
 }

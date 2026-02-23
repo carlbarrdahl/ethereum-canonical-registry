@@ -1,15 +1,8 @@
 import { Hono } from "hono";
 import { db } from "ponder:api";
 import schema from "ponder:schema";
-import { desc, eq, sql, and, gte, graphql, client } from "ponder";
-import {
-  strategy,
-  distribution,
-  transfer,
-  donor,
-  strategyBalance,
-  fork,
-} from "ponder:schema";
+import { desc, eq, sql, graphql } from "ponder";
+import { identifier, withdrawal } from "ponder:schema";
 
 const app = new Hono();
 
@@ -17,200 +10,96 @@ const app = new Hono();
 // GraphQL API (auto-generated from schema)
 // ============================================================================
 
-// Ponder auto-generates a GraphQL API at /graphql
-// This provides full CRUD queries for all schema tables:
+// Ponder auto-generates a GraphQL API at /graphql for all schema tables:
 //
-// Queries available:
-//   - strategy(id: "0x...")
-//   - strategys(where: {...}, orderBy: {...}, limit: N)
-//   - allocation(id: "...")
-//   - allocations(where: {...}, ...)
-//   - distribution(id: "...")
-//   - distributions(where: {...}, ...)
-//   - payout(id: "...")
-//   - payouts(where: {...}, ...)
-//   - transfer(id: "...")
-//   - transfers(where: {...}, ...)
-//   - donor(id: "...")
-//   - donors(where: {...}, ...)
-//   - strategyBalance(id: "...")
-//   - strategyBalances(where: {...}, ...)
-//   - fork(id: "...")
-//   - forks(where: {...}, ...)
-//
-// Example GraphQL queries:
-//
-// Get a strategy:
-//   query { strategy(id: "0x...") { id owner allocations timesForked } }
-//
-// List strategies ordered by times forked:
-//   query { strategys(orderBy: "timesForked", orderDirection: "desc", limit: 10) { items { id owner timesForked } } }
-//
-// Get strategies by owner:
-//   query { strategys(where: { owner: "0x..." }) { items { id allocations } } }
+//   identifier(id: "0x...")
+//   identifiers(where: { owner: "0x..." }, orderBy: "createdAt", orderDirection: "desc")
+//   identifierAlias(id: "...")
+//   identifierAliases(where: { primaryId: "0x..." })
+//   withdrawal(id: "...")
+//   withdrawals(where: { identifierId: "0x..." })
+//   warehouseBalance(id: "...")
+//   warehouseBalances(where: { user: "0x..." })
 
 app.use("/graphql", graphql({ db, schema }));
 
 // ============================================================================
-// Custom REST Endpoints (for complex queries not easily done in GraphQL)
+// Custom REST Endpoints
 // ============================================================================
 
 /**
- * Get trending strategies (most activity in last 24h/7d)
- * This requires aggregation which is easier in SQL
- * Uses load-balanced, rate-limited RPC to handle the volume
- */
-app.get("/api/strategies/trending", async (c) => {
-  const period = c.req.query("period") ?? "24h";
-  const limit = Math.min(parseInt(c.req.query("limit") ?? "10"), 50);
-
-  const now = BigInt(Math.floor(Date.now() / 1000));
-  const threshold = period === "7d" ? now - 604800n : now - 86400n;
-
-  const trending = await db
-    .select({
-      strategyId: transfer.strategyId,
-      transferCount: sql<number>`count(*)`.as("transferCount"),
-      totalAmount: sql<bigint>`sum(${transfer.amount})`.as("totalAmount"),
-    })
-    .from(transfer)
-    .where(
-      and(eq(transfer.direction, "in"), gte(transfer.timestamp, threshold)),
-    )
-    .groupBy(transfer.strategyId)
-    .orderBy(desc(sql`count(*)`))
-    .limit(limit);
-
-  if (trending.length === 0) {
-    return c.json({ data: [], period });
-  }
-
-  const strategyIds = trending.map((t) => t.strategyId);
-  const strategies = await db
-    .select()
-    .from(strategy)
-    .where(sql`${strategy.id} IN (${sql.join(strategyIds, sql`, `)})`);
-
-  const result = trending.map((t) => {
-    const s = strategies.find((s) => s.id === t.strategyId);
-    return {
-      ...s,
-      // Convert BigInt fields to strings for JSON serialization
-      createdAt: s?.createdAt?.toString(),
-      createdAtBlock: s?.createdAtBlock?.toString(),
-      lastUpdatedAt: s?.lastUpdatedAt?.toString(),
-      lastUpdatedAtBlock: s?.lastUpdatedAtBlock?.toString(),
-      trendingStats: {
-        transferCount: t.transferCount,
-        totalAmount: t.totalAmount?.toString(),
-      },
-    };
-  });
-
-  return c.json({ data: result, period });
-});
-
-/**
- * Get global protocol stats (aggregations)
+ * GET /api/stats
+ * Global registry statistics.
  */
 app.get("/api/stats", async (c) => {
-  const strategiesResult = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(strategy);
-  const totalStrategies = strategiesResult[0]?.count ?? 0;
-
-  const curatorsResult = await db
-    .select({ count: sql<number>`count(distinct ${strategy.owner})` })
-    .from(strategy);
-  const totalCurators = curatorsResult[0]?.count ?? 0;
-
-  const donorsResult = await db
-    .select({ count: sql<number>`count(distinct ${donor.address})` })
-    .from(donor);
-  const totalDonors = donorsResult[0]?.count ?? 0;
-
-  const distributionsResult = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(distribution);
-  const totalDistributions = distributionsResult[0]?.count ?? 0;
-
-  const totalAllocatedResult = await db
-    .select({
-      totalUSD: sql<bigint>`sum(${strategyBalance.totalReceivedUSD})`,
-    })
-    .from(strategyBalance);
-  const totalAllocatedUSD =
-    totalAllocatedResult[0]?.totalUSD?.toString() ?? "0";
-
-  const balancesByToken = await db
-    .select({
-      token: strategyBalance.token,
-      totalReceived: sql<bigint>`sum(${strategyBalance.totalReceived})`,
-      totalDistributed: sql<bigint>`sum(${strategyBalance.totalDistributed})`,
-    })
-    .from(strategyBalance)
-    .groupBy(strategyBalance.token);
+  const [identifiersResult, ownersResult, withdrawalsResult, withdrawnResult] =
+    await Promise.all([
+      db.select({ count: sql<number>`count(*)` }).from(identifier),
+      db
+        .select({ count: sql<number>`count(distinct ${identifier.owner})` })
+        .from(identifier)
+        .where(sql`${identifier.owner} is not null`),
+      db.select({ count: sql<number>`count(*)` }).from(withdrawal),
+      db
+        .select({ total: sql<bigint>`sum(${withdrawal.amount})` })
+        .from(withdrawal),
+    ]);
 
   return c.json({
     data: {
-      totalStrategies,
-      totalCurators,
-      totalDonors,
-      totalDistributions,
-      totalAllocatedUSD,
-      totalsByToken: balancesByToken.map((b) => ({
-        token: b.token,
-        totalReceived: b.totalReceived?.toString() ?? "0",
-        totalDistributed: b.totalDistributed?.toString() ?? "0",
-      })),
+      totalIdentifiers: identifiersResult[0]?.count ?? 0,
+      totalOwners: ownersResult[0]?.count ?? 0,
+      totalWithdrawals: withdrawalsResult[0]?.count ?? 0,
+      totalWithdrawnUSD: (withdrawnResult[0]?.total ?? 0n).toString(),
     },
   });
 });
 
 /**
- * Get fork lineage for a strategy (recursive query)
+ * GET /api/identifiers/:namespace
+ * List all claimed identifiers for a given namespace.
  */
-app.get("/api/strategies/:address/lineage", async (c) => {
-  const address = c.req.param("address").toLowerCase() as `0x${string}`;
+app.get("/api/identifiers/:namespace", async (c) => {
+  const namespace = c.req.param("namespace");
+  const limit = Math.min(parseInt(c.req.query("limit") ?? "50"), 200);
 
-  const result = await db
+  const results = await db
     .select()
-    .from(strategy)
-    .where(eq(strategy.id, address));
-
-  if (result.length === 0) {
-    return c.json({ error: "Strategy not found" }, 404);
-  }
-
-  const currentStrategy = result[0]!;
-
-  // Walk up the sourceStrategy chain
-  const ancestors: string[] = [];
-  let current = currentStrategy.sourceStrategy;
-
-  while (current) {
-    ancestors.push(current);
-    const parent = await db
-      .select()
-      .from(strategy)
-      .where(eq(strategy.id, current));
-    current = parent[0]?.sourceStrategy ?? null;
-  }
-
-  // Get direct children
-  const children = await db
-    .select()
-    .from(fork)
-    .where(eq(fork.sourceStrategyId, address));
+    .from(identifier)
+    .where(eq(identifier.namespace, namespace))
+    .orderBy(desc(identifier.createdAt))
+    .limit(limit);
 
   return c.json({
-    data: {
-      strategy: address,
-      sourceStrategy: currentStrategy.sourceStrategy,
-      ancestors: ancestors.reverse(),
-      children: children.map((f) => f.childStrategyId),
-      depth: ancestors.length,
-    },
+    data: results.map((row) => ({
+      ...row,
+      claimedAt: row.claimedAt?.toString() ?? null,
+      revokedAt: row.revokedAt?.toString() ?? null,
+      createdAt: row.createdAt.toString(),
+    })),
+  });
+});
+
+/**
+ * GET /api/owner/:address/identifiers
+ * List all identifiers owned by a given address.
+ */
+app.get("/api/owner/:address/identifiers", async (c) => {
+  const address = c.req.param("address").toLowerCase() as `0x${string}`;
+
+  const results = await db
+    .select()
+    .from(identifier)
+    .where(eq(identifier.owner, address))
+    .orderBy(desc(identifier.createdAt));
+
+  return c.json({
+    data: results.map((row) => ({
+      ...row,
+      claimedAt: row.claimedAt?.toString() ?? null,
+      revokedAt: row.revokedAt?.toString() ?? null,
+      createdAt: row.createdAt.toString(),
+    })),
   });
 });
 

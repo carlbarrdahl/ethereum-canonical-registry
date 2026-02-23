@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@workspace/ui"],
+  transpilePackages: ["@ethereum-canonical-registry/ui"],
   serverExternalPackages: ['pino', 'pino-pretty', 'thread-stream'],
   images: {
     remotePatterns: [

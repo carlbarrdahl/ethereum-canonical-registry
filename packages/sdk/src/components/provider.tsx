@@ -7,48 +7,48 @@ import {
   useState,
   type PropsWithChildren,
 } from "react";
-import { CuratorSDK, type SupportedChainId } from "..";
+import { CanonicalRegistrySDK, type SupportedChainId } from "..";
 import type { WalletClient } from "viem";
 
-type CuratorContextValue<T extends CuratorSDK = CuratorSDK> = {
+type CanonicalRegistryContextValue<T extends CanonicalRegistrySDK = CanonicalRegistrySDK> = {
   sdk: T | null;
 };
 
-const CuratorContext = createContext<CuratorContextValue>({
+const CanonicalRegistryContext = createContext<CanonicalRegistryContextValue>({
   sdk: null,
 });
 
-type CuratorProviderProps<T extends CuratorSDK> = PropsWithChildren<{
+type CanonicalRegistryProviderProps<T extends CanonicalRegistrySDK> = PropsWithChildren<{
   client?: WalletClient;
   defaultChain?: SupportedChainId;
 }>;
 
-export function CuratorProvider<T extends CuratorSDK = CuratorSDK>({
+export function CanonicalRegistryProvider<T extends CanonicalRegistrySDK = CanonicalRegistrySDK>({
   children,
   client,
   defaultChain,
-}: CuratorProviderProps<T>): React.ReactNode {
-  const [sdk, setSdk] = useState<CuratorSDK | null>(() => {
-    return new CuratorSDK(client, defaultChain);
+}: CanonicalRegistryProviderProps<T>): React.ReactNode {
+  const [sdk, setSdk] = useState<CanonicalRegistrySDK | null>(() => {
+    return new CanonicalRegistrySDK(client, defaultChain);
   });
 
   useEffect(() => {
-    setSdk(new CuratorSDK(client, defaultChain));
+    setSdk(new CanonicalRegistrySDK(client, defaultChain));
   }, [client, defaultChain]);
 
   return (
-    <CuratorContext.Provider value={{ sdk }}>
+    <CanonicalRegistryContext.Provider value={{ sdk }}>
       {children}
-    </CuratorContext.Provider>
+    </CanonicalRegistryContext.Provider>
   );
 }
 
-export function useCuratorSDK<T extends CuratorSDK = CuratorSDK>(): {
+export function useCanonicalRegistrySDK<T extends CanonicalRegistrySDK = CanonicalRegistrySDK>(): {
   sdk: T | null;
 } {
-  const context = useContext(CuratorContext);
+  const context = useContext(CanonicalRegistryContext);
   if (!context) {
-    throw new Error("useCuratorSDK must be used within a CuratorProvider");
+    throw new Error("useCanonicalRegistrySDK must be used within a CanonicalRegistryProvider");
   }
   return context as { sdk: T | null };
 }

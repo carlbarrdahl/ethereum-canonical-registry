@@ -1,6 +1,6 @@
 "use client";
 
-import { useCuratorSDK } from "../components/provider";
+import { useCanonicalRegistrySDK } from "../components/provider";
 import {
   useMutation,
   useQuery,
@@ -20,7 +20,7 @@ export function useOwnerOf(
   id: `0x${string}` | undefined,
   opts?: QueryOptions,
 ): UseQueryResult<Address | null> {
-  const { sdk } = useCuratorSDK();
+  const { sdk } = useCanonicalRegistrySDK();
   return useQuery({
     queryKey: ["registry", "ownerOf", id],
     queryFn: async () => {
@@ -36,7 +36,7 @@ export function usePredictAddress(
   id: `0x${string}` | undefined,
   opts?: QueryOptions,
 ): UseQueryResult<Address | null> {
-  const { sdk } = useCuratorSDK();
+  const { sdk } = useCanonicalRegistrySDK();
   return useQuery({
     queryKey: ["registry", "predictAddress", id],
     queryFn: async () => {
@@ -53,7 +53,7 @@ export function useToId(
   canonicalString: string | undefined,
   opts?: QueryOptions,
 ): UseQueryResult<`0x${string}` | null> {
-  const { sdk } = useCuratorSDK();
+  const { sdk } = useCanonicalRegistrySDK();
   return useQuery({
     queryKey: ["registry", "toId", namespace, canonicalString],
     queryFn: async () => {
@@ -76,7 +76,7 @@ export function useClaim(
     { namespace: string; canonicalString: string; proof: `0x${string}` }
   >,
 ) {
-  const { sdk } = useCuratorSDK();
+  const { sdk } = useCanonicalRegistrySDK();
   const invalidate = useInvalidate();
 
   return useMutation({
@@ -116,7 +116,7 @@ export function useRevoke(
     { namespace: string; canonicalString: string }
   >,
 ) {
-  const { sdk } = useCuratorSDK();
+  const { sdk } = useCanonicalRegistrySDK();
   const invalidate = useInvalidate();
 
   return useMutation({
@@ -150,7 +150,7 @@ export function useLinkIds(
     { primaryId: `0x${string}`; aliasIds: `0x${string}`[] }
   >,
 ) {
-  const { sdk } = useCuratorSDK();
+  const { sdk } = useCanonicalRegistrySDK();
   const invalidate = useInvalidate();
 
   return useMutation({
@@ -184,7 +184,7 @@ export function useUnlinkIds(
     { primaryId: `0x${string}`; aliasIds: `0x${string}`[] }
   >,
 ) {
-  const { sdk } = useCuratorSDK();
+  const { sdk } = useCanonicalRegistrySDK();
   const invalidate = useInvalidate();
 
   return useMutation({
@@ -218,7 +218,7 @@ export function useDeployEscrow(
     { id: `0x${string}` }
   >,
 ) {
-  const { sdk } = useCuratorSDK();
+  const { sdk } = useCanonicalRegistrySDK();
   const invalidate = useInvalidate();
 
   return useMutation({

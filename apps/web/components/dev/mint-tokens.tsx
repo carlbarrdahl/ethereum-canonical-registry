@@ -5,14 +5,14 @@ import { useAccount, useChainId, useWriteContract } from "wagmi";
 import { type Address, erc20Abi, getAddress, parseUnits } from "viem";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToken } from "@/hooks/use-token";
-import { Button } from "@workspace/ui/components/button";
+import { Button } from "@ethereum-canonical-registry/ui/components/button";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@workspace/ui/components/alert";
+} from "@ethereum-canonical-registry/ui/components/alert";
 import { useWaitForEvent } from "@/hooks/use-wait-for-event";
-import { getTokens, isNativeToken } from "@workspace/sdk";
+import { getTokens, isNativeToken } from "@ethereum-canonical-registry/sdk";
 import { SelectToken } from "@/components/select-token";
 
 // Mint ABI for TestToken

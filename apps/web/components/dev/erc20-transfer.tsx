@@ -6,15 +6,15 @@ import { type Address, isAddress, parseUnits } from "viem";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToken } from "@/hooks/use-token";
 import { useTransfer } from "@/hooks/use-transfer";
-import { Button } from "@workspace/ui/components/button";
+import { Button } from "@ethereum-canonical-registry/ui/components/button";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@workspace/ui/components/alert";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
-import { getTokens, useENSGetAddress, ENS_DOMAIN } from "@workspace/sdk";
+} from "@ethereum-canonical-registry/ui/components/alert";
+import { Input } from "@ethereum-canonical-registry/ui/components/input";
+import { Label } from "@ethereum-canonical-registry/ui/components/label";
+import { getTokens, useENSGetAddress, ENS_DOMAIN } from "@ethereum-canonical-registry/sdk";
 import { SelectToken } from "@/components/select-token";
 
 export function ERC20Transfer() {
