@@ -30,7 +30,7 @@ Every identifier has a CREATE2-derived Ethereum address computable locally befor
 Funder → token.transfer(depositAddress, amount)
          ...time passes...
 Entity → registry.claim("github", "org/repo", proof)
-Entity → escrow.withdrawTo(token)
+Entity → escrow.withdraw(token)
 ```
 
 The deposit address does not change if ownership changes or the escrow implementation is upgraded.

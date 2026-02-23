@@ -55,15 +55,15 @@ Each requirement follows one of these templates:
 
 ## 5. Escrow Withdrawals
 
-**CR-WITH-01** When `withdrawTo(token)` is called on a `ClaimableEscrow`, the escrow shall transfer all `token` balance to the current registered owner of its identifier.
+**CR-WITH-01** When `withdraw(token)` is called on a `ClaimableEscrow`, the escrow shall transfer all `token` balance to the current registered owner of its identifier.
 
-**CR-WITH-02** If the identifier is not yet claimed, then `withdrawTo` shall revert.
+**CR-WITH-02** If the identifier is not yet claimed, then `withdraw` shall revert.
 
-**CR-WITH-03** If the total balance of `token` (after pulling from the Splits Warehouse) is zero, then `withdrawTo` shall revert.
+**CR-WITH-03** If the total balance of `token` (after pulling from the Splits Warehouse) is zero, then `withdraw` shall revert.
 
 **CR-WITH-04** When the escrow has a non-trivial Splits Warehouse internal balance for `token`, the escrow shall call `warehouse.withdraw` before transferring to the owner.
 
-**CR-WITH-05** The registry shall allow anyone to call `withdrawTo` — the caller need not be the owner.
+**CR-WITH-05** The registry shall allow anyone to call `withdraw` — the caller need not be the owner.
 
 ---
 

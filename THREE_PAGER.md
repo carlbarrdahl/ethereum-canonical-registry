@@ -52,7 +52,7 @@ Every identifier has a CREATE2-derived Ethereum address computable locally, befo
 Funder → token.transfer(depositAddress, amount)
          ...time passes...
 Entity → registry.claim("github", "org/repo", proof)
-Entity → escrow.withdrawTo(token)
+Entity → escrow.withdraw(token)
 ```
 
 This is the property that makes the registry useful beyond a naming service. A protocol can fund any identifier immediately. The entity claims whenever they're ready. Funds accumulate in the interim.
@@ -125,7 +125,7 @@ EAS provides attestation infrastructure — schemas, revocation, indexing — bu
 
 **Distribution protocol.** Resolve identifiers to addresses in the frontend at allocation creation time. Store plain Ethereum addresses. No registry interaction at distribution time.
 
-**Registrant.** Obtain a proof from the backend service, call `claim`, then `withdrawTo` to sweep accumulated funds.
+**Registrant.** Obtain a proof from the signing service, call `claim`, then `withdraw` to sweep accumulated funds.
 
 ## Trust model
 

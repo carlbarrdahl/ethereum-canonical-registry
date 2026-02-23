@@ -44,7 +44,7 @@ Structured requirements using [EARS notation](https://alistairmavin.com/ears/) (
 
 **CR-CLAIM-04** If the submitted proof is invalid (wrong signer, expired, wrong claimant), then the registry shall revert the claim transaction.
 
-**CR-CLAIM-05** If the identifier is an alias, then the registry shall revert the claim transaction.
+**CR-CLAIM-05** If the identifier is an active alias (its primary is still claimed), then the registry shall revert the claim transaction. If the alias is stale (primary was revoked), the registry shall clear the alias entry and allow the claim to proceed.
 
 ---
 
@@ -60,15 +60,15 @@ Structured requirements using [EARS notation](https://alistairmavin.com/ears/) (
 
 ## 5. Escrow Withdrawals
 
-**CR-WITH-01** When `withdrawTo(token)` is called on a `ClaimableEscrow`, the escrow shall transfer all `token` balance to the current registered owner of its identifier.
+**CR-WITH-01** When `withdraw(token)` is called on a `ClaimableEscrow`, the escrow shall transfer all `token` balance to the current registered owner of its identifier.
 
-**CR-WITH-02** If the identifier is not yet claimed, then `withdrawTo` shall revert.
+**CR-WITH-02** If the identifier is not yet claimed, then `withdraw` shall revert.
 
-**CR-WITH-03** If the total balance of `token` (after pulling from the Splits Warehouse) is zero, then `withdrawTo` shall revert.
+**CR-WITH-03** If the total balance of `token` (after pulling from the Splits Warehouse) is zero, then `withdraw` shall revert.
 
 **CR-WITH-04** When the escrow has a non-trivial Splits Warehouse internal balance for `token`, the escrow shall call `warehouse.withdraw` before transferring to the owner.
 
-**CR-WITH-05** The registry shall allow anyone to call `withdrawTo` — the caller need not be the owner.
+**CR-WITH-05** The registry shall allow anyone to call `withdraw` — the caller need not be the owner.
 
 ---
 
@@ -114,7 +114,7 @@ Structured requirements using [EARS notation](https://alistairmavin.com/ears/) (
 
 **CR-UPG-01** The registry shall own an `UpgradeableBeacon` to which all `ClaimableEscrow` proxies delegate.
 
-**CR-UPG-02** Only the registry owner shall be able to upgrade the escrow implementation via the beacon.
+**CR-UPG-02** Only the registry owner shall be able to upgrade the escrow implementation via `upgradeEscrowImplementation(newImpl)`.
 
 **CR-UPG-03** After an upgrade, all existing escrow proxy addresses shall remain unchanged.
 
@@ -154,9 +154,9 @@ Structured requirements using [EARS notation](https://alistairmavin.com/ears/) (
 
 **REQ-SDK2** The SDK shall provide pure, RPC-free utilities: `toId(namespace, canonicalString)`, `canonicalise(value)`, `parseUrl(input)`, `formatIdentifier(namespace, canonicalString)`, and `parseIdentifier(identifier)`.
 
-**REQ-SDK3** The SDK shall provide `registry.ownerOf(id)`, `registry.predictAddress(id)`, `registry.claim(namespace, canonicalString, proof)`, `registry.revoke(namespace, canonicalString)`, `registry.linkIds(primaryId, aliasIds)`, `registry.unlinkIds(primaryId, aliasIds)`, `registry.deployEscrow(id)`, `registry.isEscrowDeployed(id)`, `registry.resolveIdentifier(namespace, canonicalString, token)`, and `registry.setVerifier(namespace, verifier)`.
+**REQ-SDK3** The SDK shall provide `registry.ownerOf(id)`, `registry.predictAddress(id)`, `registry.claim(namespace, canonicalString, proof)`, `registry.revoke(namespace, canonicalString)`, `registry.linkIds(primaryId, aliasIds)`, `registry.unlinkIds(primaryId, aliasIds)`, `registry.deployEscrow(id)`, `registry.isEscrowDeployed(id)`, `registry.resolveIdentifier(namespace, canonicalString, token?)`, and `registry.setVerifier(namespace, verifier)`.
 
-**REQ-SDK4** The SDK shall provide `escrow.withdrawTo(escrowAddress, token)`.
+**REQ-SDK4** The SDK shall provide `escrow.withdraw(escrowAddress, token)`.
 
 **REQ-SDK5** The SDK shall provide `warehouse.withdraw(owner, token)` and `warehouse.balanceOf(owner, token)`.
 
@@ -164,7 +164,7 @@ Structured requirements using [EARS notation](https://alistairmavin.com/ears/) (
 
 **REQ-SDK7** The SDK shall provide React query hooks: `useIdentifier`, `useIdentifiers`, `useAliases`, `useEscrowWithdrawals`, `useRegistryStats`, `useWarehouseBalance`, `useWarehouseBalances`.
 
-**REQ-SDK8** The SDK shall provide React mutation hooks: `useClaim`, `useRevoke`, `useLinkIds`, `useUnlinkIds`, `useDeployEscrow`, `useWithdrawTo`, `useWithdrawFromWarehouse`.
+**REQ-SDK8** The SDK shall provide React mutation hooks: `useClaim`, `useRevoke`, `useLinkIds`, `useUnlinkIds`, `useDeployEscrow`, `useWithdraw`, `useWithdrawFromWarehouse`.
 
 **REQ-SDK9** When a mutation hook succeeds, the SDK shall invalidate related query keys after a delay to allow indexer processing.
 

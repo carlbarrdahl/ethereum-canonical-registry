@@ -1,6 +1,6 @@
 import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
-import { generateGithubProof } from "@ethereum-canonical-registry/contracts/backend/generateGithubProof"
+import { signProof } from "@/lib/signProof"
 
 export async function POST(request: Request): Promise<NextResponse> {
   const cookieStore = await cookies()
@@ -18,10 +18,26 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   try {
-    const proof = await generateGithubProof({
-      oauthToken,
-      owner,
-      repo,
+    const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+      headers: { Authorization: `Bearer ${oauthToken}`, Accept: "application/vnd.github.v3+json" },
+    })
+
+    if (repoRes.status === 401) {
+      return NextResponse.json({ error: "GitHub token expired, please reconnect" }, { status: 401 })
+    }
+    if (!repoRes.ok) {
+      return NextResponse.json({ error: `Repository ${owner}/${repo} not found` }, { status: 404 })
+    }
+
+    const repoData = await repoRes.json()
+    if (!repoData.permissions?.admin) {
+      return NextResponse.json({ error: `You are not an admin of ${owner}/${repo}` }, { status: 403 })
+    }
+
+    const canonicalString = `${owner.toLowerCase()}/${repo.toLowerCase()}`
+    const proof = await signProof({
+      namespace: "github",
+      canonicalString,
       claimant,
       registryAddress,
       chainId,

@@ -13,7 +13,7 @@ export type IdentifierState = {
   id: `0x${string}`;
   depositAddress: Address;
   owner: Address | null;
-  balance: bigint;
+  balance: bigint | null;
 };
 
 type ChainDeployments = {
@@ -197,7 +197,7 @@ export function createRegistryMethods(
     resolveIdentifier: async (
       namespace: string,
       rawCanonicalString: string,
-      token: Address,
+      token?: Address,
     ): Promise<IdentifierState> => {
       const cs = canonicalise(rawCanonicalString);
       const id = toId(namespace, cs);
@@ -210,6 +210,12 @@ export function createRegistryMethods(
             client: { public: publicClient },
           }) as any).read.predictAddress([id]);
 
+      const registryContract = getContract({
+        address: registryAddress,
+        abi: registryAbi,
+        client: { public: publicClient },
+      });
+
       const erc20Abi = [
         {
           name: "balanceOf",
@@ -220,20 +226,16 @@ export function createRegistryMethods(
         },
       ] as const;
 
-      const registryContract = getContract({
-        address: registryAddress,
-        abi: registryAbi,
-        client: { public: publicClient },
-      });
-
       const [ownerRaw, balance] = await Promise.all([
         (registryContract as any).read.ownerOf([id]) as Promise<Address>,
-        publicClient.readContract({
-          address: token,
-          abi: erc20Abi,
-          functionName: "balanceOf",
-          args: [depositAddress],
-        }),
+        token
+          ? publicClient.readContract({
+              address: token,
+              abi: erc20Abi,
+              functionName: "balanceOf",
+              args: [depositAddress],
+            })
+          : Promise.resolve(null),
       ]);
 
       return {

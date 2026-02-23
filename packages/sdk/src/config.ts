@@ -1,7 +1,7 @@
 import { mainnet, sepolia, hardhat } from "viem/chains";
 import _deployments from "@ethereum-canonical-registry/contracts/deployments.json";
 
-const deployments = _deployments as Record<string, Record<string, { address: string }>>;
+const deployments = _deployments as unknown as Record<string, Record<string, { address: string }>>;
 
 // Mainnet (1), Sepolia (11155111), Local (31337)
 export type SupportedChainId = 1 | 11155111 | 31337;

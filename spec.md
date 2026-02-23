@@ -190,10 +190,10 @@ Each identifier's proxy holds accumulated funds and handles withdrawal to the re
 1. **Direct ERC-20 transfers** — any `token.transfer(depositAddress, amount)` accumulates as the proxy's own token balance.
 2. **Splits Warehouse deposits** — protocols that route funds through the Splits Warehouse using the deposit address as a recipient accumulate a warehouse balance under that address.
 
-Both paths are swept in a single `withdrawTo(token)` call:
+Both paths are swept in a single `withdraw(token)` call:
 
 ```solidity
-function withdrawTo(address token) external {
+function withdraw(address token) external {
     address registrant = registry.ownerOf(id);
     require(registrant != address(0), "ClaimableEscrow: not yet claimed");
 
@@ -212,7 +212,7 @@ function withdrawTo(address token) external {
 }
 ```
 
-Anyone can call `withdrawTo` — funds always go to the registrant, not the caller. This allows a frontend or keeper to sweep on the registrant's behalf.
+Anyone can call `withdraw` — funds always go to the registrant, not the caller. This allows a frontend or keeper to sweep on the registrant's behalf.
 
 If ownership of an identifier changes (revoke and re-claim), the escrow sends funds to whoever is currently registered. The deposit address is stable; the destination is determined at withdrawal time.
 
@@ -262,7 +262,7 @@ const balance = await getClaimableBalance(
 For protocols building allocation systems — grant programs, funding distributions, dependency tooling — the recommended resolution flow at allocation creation time is:
 
 - **If claimed:** use the registrant address directly as the allocation recipient. Funds flow to the registrant's warehouse balance and are withdrawn normally.
-- **If unclaimed:** use `predictAddress(id)` as the allocation recipient. Funds accumulate in the escrow until the identifier is claimed, at which point the registrant calls `withdrawTo`.
+- **If unclaimed:** use `predictAddress(id)` as the allocation recipient. Funds accumulate in the escrow until the identifier is claimed, at which point the registrant calls `withdraw`.
 
 The resolved address is stored as a plain Ethereum address in the upstream protocol. No knowledge of the registry is required at distribution time.
 
@@ -270,7 +270,7 @@ The resolved address is stored as a plain Ethereum address in the upstream proto
 
 1. Obtain a proof from the signing service for the relevant namespace (GitHub OAuth or DNS TXT record).
 2. Call `registry.claim(namespace, canonicalString, proof)`. The registry verifies the proof and records the registrant address. The escrow proxy is deployed at this point if not already deployed.
-3. Call `escrow.withdrawTo(tokenAddress)` on the deposit address to sweep any accumulated funds.
+3. Call `escrow.withdraw(tokenAddress)` on the deposit address to sweep any accumulated funds.
 
 ```ts
 // Step 1: generate proof via backend service
@@ -280,7 +280,7 @@ const proof = await generateGithubProof({ accessToken, owner, repo, claimant, ..
 await registry.claim("github", "org/repo", proof)
 
 // Step 3: withdraw accumulated funds
-await escrow.withdrawTo(tokenAddress)
+await escrow.withdraw(tokenAddress)
 ```
 
 ---
@@ -334,7 +334,7 @@ The migration path is: deploy a new `IVerifier` implementation and call `registr
 
 **EAS.** The natural long-term storage layer for ownership attestations. The current registry maintains an internal mapping for self-containment. A future design could use EAS attestations as the canonical source of truth, inheriting EAS's revocation model, indexing, and composability. The conditions for that migration — EAS schema stability, gas cost, upgrade path — are an open research question.
 
-**Splits.** Every deposit address is a first-class Splits Warehouse recipient. The `ClaimableEscrow` handles both Warehouse deposits (via `batchDeposit`) and direct ERC-20 transfers in a single `withdrawTo` call. Distribution protocols that route funds through the Splits Warehouse can use any deposit address as an allocation recipient without modification.
+**Splits.** Every deposit address is a first-class Splits Warehouse recipient. The `ClaimableEscrow` handles both Warehouse deposits (via `batchDeposit`) and direct ERC-20 transfers in a single `withdraw` call. Distribution protocols that route funds through the Splits Warehouse can use any deposit address as an allocation recipient without modification.
 
 **Drips.** Maps GitHub repositories to addresses with pre-funding support, using an oracle to read `FUNDING.json`. The Canonical Registry generalises the same pattern across namespaces with a pluggable verifier interface, a defined path toward trustless verification, and a design as a shared primitive rather than application-specific infrastructure.
 

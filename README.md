@@ -20,10 +20,16 @@ npm install @ethereum-canonical-registry/sdk
 import { CanonicalRegistrySDK } from "@ethereum-canonical-registry/sdk";
 
 const sdk = new CanonicalRegistrySDK();
-const state = await sdk.registry.resolveIdentifier("github", "org/repo", tokenAddress);
+
+// Without token — just owner and deposit address
+const state = await sdk.registry.resolveIdentifier("github", "org/repo");
 // state.id             — bytes32 identifier
 // state.depositAddress — where funders should send tokens
 // state.owner          — null if unclaimed
+// state.balance        — null
+
+// With token — also fetches the claimable balance
+const state = await sdk.registry.resolveIdentifier("github", "org/repo", tokenAddress);
 // state.balance        — claimable token balance at the deposit address
 ```
 
@@ -46,27 +52,29 @@ await token.transfer(state.depositAddress, amount);
 
 ## Claim an Identifier
 
-Ownership is proven via a namespace-specific verifier. The web API generates signed proofs after off-chain verification.
+Ownership is proven via a namespace-specific verifier. The web app's claim gateway handles verification and returns a signed proof.
 
 ### GitHub
 
 ```ts
-// 1. Exchange a GitHub OAuth code for a proof
-const res = await fetch("/api/proof/github", {
-  method: "POST",
-  body: JSON.stringify({ code: oauthCode, owner: "org", repo: "repo", claimant: address }),
-});
-const { proof } = await res.json();
+// 1. Redirect the user to the claim gateway (handles OAuth flow)
+window.location.href = `/claim/github?owner=org&repo=repo&claimant=${address}`;
 
-// 2. Submit the claim on-chain
+// 2. After OAuth, the gateway redirects back with the proof:
+//    /claim/github/callback?proof=0x...
+const proof = new URLSearchParams(window.location.search).get("proof");
+
+// 3. Submit the claim on-chain
 await sdk.registry.claim("github", "org/repo", proof);
 ```
 
 ### DNS
 
 ```ts
-// 1. Set a TXT record: _eth-canonical.example.com → 0xYourAddress
-// 2. Request a proof from the API
+// 1. Add a TXT record to your domain:
+//    _eth-canonical.example.com → "0xYourAddress"
+
+// 2. Request a proof (the API resolves the TXT record and signs it)
 const res = await fetch("/api/proof/dns", {
   method: "POST",
   body: JSON.stringify({ domain: "example.com", claimant: address }),

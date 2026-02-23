@@ -22,7 +22,7 @@ description: System design, capital flows, security model, and technical decisio
 │                            │                                         │
 │  Funders ──(ERC-20)──▶  0x4a3b... (escrow proxy)                   │
 │                            │                                         │
-│                       withdrawTo() ──▶ registered owner             │
+│                       withdraw() ──▶ registered owner               │
 │                                                                      │
 │  SplitsWarehouse ◀── optional deposit path                          │
 │                                                                      │
@@ -65,7 +65,7 @@ Funder ──(ERC-20 transfer)──▶ 0x4a3b... (ClaimableEscrow proxy)
                                         │
                          Owner claims identifier
                                         │
-                         withdrawTo(token) called (by anyone)
+                         withdraw(token) called (by anyone)
                                         │
                                         ▼
                               Registered owner receives funds
@@ -73,7 +73,7 @@ Funder ──(ERC-20 transfer)──▶ 0x4a3b... (ClaimableEscrow proxy)
 
 1. Funder sends ERC-20 tokens to the deterministic deposit address
 2. Tokens accumulate in the `ClaimableEscrow` proxy (or Splits Warehouse if deposited there)
-3. After the owner claims the identifier with a valid proof, anyone can call `withdrawTo(token)`
+3. After the owner claims the identifier with a valid proof, anyone can call `withdraw(token)`
 4. Funds route exclusively to the current registered owner — the caller receives nothing
 
 The deposit address is stable and computable before the escrow proxy is deployed. Funders do not need to wait for the owner to claim.
@@ -90,13 +90,13 @@ The deposit address is stable and computable before the escrow proxy is deployed
 | **Oracle signer** | Trusted for proofs | Signs claim proofs after off-chain verification; cannot affect existing ownership |
 | **Claimants** | Must prove ownership | Can claim only with a valid, unexpired oracle proof |
 | **Funders** | Trustless | Send tokens to deposit addresses; receive nothing back |
-| **Withdrawers** | Permissionless | Call `withdrawTo`; funds always go to registered owner, not caller |
+| **Withdrawers** | Permissionless | Call `withdraw`; funds always go to registered owner, not caller |
 
 ### Non-Custodial Properties
 
-`ClaimableEscrow` has **no function to redirect funds to an arbitrary address**. The only exit path for funds is `withdrawTo(token)`, which sends to `registry.ownerOf(id)`. The registry owner can change verifiers or upgrade the escrow implementation, but cannot redirect funds from an existing escrow.
+`ClaimableEscrow` has **no function to redirect funds to an arbitrary address**. The only exit path for funds is `withdraw(token)`, which sends to `registry.ownerOf(id)`. The registry owner can change verifiers or upgrade the escrow implementation, but cannot redirect funds from an existing escrow.
 
-`withdrawTo` is **permissionless** — anyone can trigger it. This prevents funds from being locked by an inactive owner.
+`withdraw` is **permissionless** — anyone can trigger it. This prevents funds from being locked by an inactive owner.
 
 ### Verifier Security
 
@@ -111,7 +111,7 @@ The trusted signer key can be rotated via `setTrustedSigner` on the verifier. Ex
 
 ### Escrow Upgradeability
 
-The beacon pattern allows the registry owner to fix bugs in the escrow implementation without changing any deposit addresses. All proxies automatically point to the new implementation after an upgrade. The upgrade cannot change which identifier an escrow belongs to or redirect withdrawals to a different owner — those invariants are enforced by `registry.ownerOf(id)`.
+The beacon pattern allows the registry owner to fix bugs in the escrow implementation via `upgradeEscrowImplementation(newImpl)` without changing any deposit addresses. All proxies automatically point to the new implementation after an upgrade. The upgrade cannot change which identifier an escrow belongs to or redirect withdrawals to a different owner — those invariants are enforced by `registry.ownerOf(id)`.
 
 ### Known Limitations (POC)
 
@@ -133,7 +133,7 @@ Using the identifier as the CREATE2 salt means the deposit address is:
 - Stable across re-deployments (same identifier → same address)
 - Unique per identifier (no collisions)
 
-Anyone can compute the address with `keccak256(abi.encode(namespace, canonicalString))` and the BeaconProxy initcode — the SDK's `toId()` utility handles this.
+Anyone can compute the address with `keccak256(abi.encode(namespace, canonicalString))` and the BeaconProxy initcode — the SDK handles this internally.
 
 ### BeaconProxy for Escrows
 
@@ -155,4 +155,4 @@ A single `mapping(bytes32 => address) public verifiers` (keyed by `keccak256(byt
 
 ### SplitsWarehouse Integration
 
-Escrows integrate with Splits Warehouse so funders can use Splits' batch deposit tools. `withdrawTo` first pulls any warehouse balance, then transfers the combined ERC-20 balance to the owner — a single call handles both paths.
+Escrows integrate with Splits Warehouse so funders can use Splits' batch deposit tools. `withdraw` first pulls any warehouse balance, then transfers the combined ERC-20 balance to the owner — a single call handles both paths.
