@@ -1,4 +1,4 @@
-# ERC-XXXX: Off-Chain Entity Registry — Reference Implementation
+# ERC-8182: Off-Chain Entity Registry — Reference Implementation
 
 Minimal, self-contained reference implementation of the Off-Chain Entity Registry standard.
 
@@ -15,4 +15,4 @@ Minimal, self-contained reference implementation of the Off-Chain Entity Registr
 
 - This implementation uses a simple `admin` address for access control. Production deployments should use a more robust governance mechanism.
 - The `OracleVerifier` is one possible verifier implementation. The standard supports any verification mechanism (ZK proofs, DNSSEC, etc.) through the `IVerifier` interface.
-- This implementation does not include escrow functionality. See [ERC-YYYY](../../erc-YYYY-claimable-escrow.md) for the companion pre-funding standard.
+- This implementation does not include escrow functionality. See [ERC-8183](../../erc-8183-claimable-escrow.md) for the companion pre-funding standard.
