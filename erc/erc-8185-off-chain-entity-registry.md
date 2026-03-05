@@ -1,9 +1,9 @@
 ---
-eip: 8182
+eip: 8185
 title: Off-Chain Entity Registry
 description: A shared registry mapping off-chain entity identifiers to Ethereum addresses through pluggable verification
 author: Carl Barrdahl (@carlbarrdahl)
-discussions-to: https://ethereum-magicians.org/t/erc-8182-off-chain-entity-registry-erc-8183-claimable-escrow/27899
+discussions-to: https://ethereum-magicians.org/t/erc-8185-off-chain-entity-registry-erc-8186-claimable-escrow/27899
 status: Draft
 type: Standards Track
 category: ERC
@@ -255,10 +255,10 @@ An ENS name can resolve to an address returned by this registry. Protocols using
 
 ## Reference Implementation
 
-A minimal reference implementation is provided in [assets/erc-8182](../assets/erc-8182/):
+A minimal reference implementation is provided in [assets/erc-8185](../assets/erc-8185/):
 
-- [`OffChainEntityRegistry.sol`](../assets/erc-8182/OffChainEntityRegistry.sol) — registry with claim, revoke, link, unlink
-- [`OracleVerifier.sol`](../assets/erc-8182/OracleVerifier.sol) — example EIP-712 oracle verifier
+- [`OffChainEntityRegistry.sol`](../assets/erc-8185/OffChainEntityRegistry.sol) — registry with claim, revoke, link, unlink
+- [`OracleVerifier.sol`](../assets/erc-8185/OracleVerifier.sol) — example EIP-712 oracle verifier
 
 The implementation has no external dependencies and is intentionally minimal. A more complete implementation with beacon proxy escrows, namespace-specific verifiers, and a TypeScript SDK is available at [ethereum-canonical-registry](https://github.com/carlbarrdahl/ethereum-canonical-registry).
 

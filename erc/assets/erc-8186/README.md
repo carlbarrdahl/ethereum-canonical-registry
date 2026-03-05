@@ -1,4 +1,4 @@
-# ERC-8183: Claimable Escrow — Reference Implementation
+# ERC-8186: Claimable Escrow — Reference Implementation
 
 Minimal, self-contained reference implementation of the Claimable Escrow standard.
 

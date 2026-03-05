@@ -1,8 +1,8 @@
 # Reference Implementations
 
-Minimal, self-contained Solidity contracts for the companion ERC-8182 and ERC-8183 standards. No external dependencies.
+Minimal, self-contained Solidity contracts for the companion ERC-8185 and ERC-8186 standards. No external dependencies.
 
-## [erc-8182/](./erc-8182/) — Off-Chain Entity Registry
+## [erc-8185/](./erc-8185/) — Off-Chain Entity Registry
 
 Maps off-chain entity identifiers (GitHub repos, DNS domains, npm packages) to Ethereum addresses through pluggable verification.
 
@@ -13,7 +13,7 @@ Maps off-chain entity identifiers (GitHub repos, DNS domains, npm packages) to E
 | `OffChainEntityRegistry.sol` | ~115 | Minimal registry (claim, revoke, link, unlink) |
 | `OracleVerifier.sol` | ~59 | Example EIP-712 oracle verifier |
 
-## [erc-8183/](./erc-8183/) — Claimable Escrow
+## [erc-8186/](./erc-8186/) — Claimable Escrow
 
 Deterministic deposit addresses (CREATE2) for pre-funding identifiers before they are claimed.
 
@@ -26,7 +26,7 @@ Deterministic deposit addresses (CREATE2) for pre-funding identifiers before the
 
 ## Relationship
 
-ERC-8183 depends on ERC-8182 — the escrow calls `ownerOf(bytes32)` on the registry to determine where to send funds. The registry has no dependency on the escrow.
+ERC-8186 depends on ERC-8185 — the escrow calls `ownerOf(bytes32)` on the registry to determine where to send funds. The registry has no dependency on the escrow.
 
 ## Production Implementation
 
