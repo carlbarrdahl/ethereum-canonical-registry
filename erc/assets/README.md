@@ -13,21 +13,21 @@ Maps off-chain entity identifiers (GitHub repos, DNS domains, npm packages) to E
 | `OffChainEntityRegistry.sol` | ~115 | Minimal registry (claim, revoke, link, unlink) |
 | `OracleVerifier.sol` | ~59 | Example EIP-712 oracle verifier |
 
-## [erc-8186/](./erc-8186/) — Claimable Escrow
+## [erc-8186/](./erc-8186/) — Identity Account
 
-Deterministic deposit addresses (CREATE2) for pre-funding identifiers before they are claimed.
+Deterministic smart accounts (CREATE2) for on-chain identities with arbitrary execution.
 
 | File | Lines | Role |
 |------|-------|------|
-| `IEscrowFactory.sol` | ~16 | Factory interface |
-| `IClaimableEscrow.sol` | ~13 | Escrow interface |
-| `EscrowFactory.sol` | ~51 | Factory using EIP-1167 clones |
-| `ClaimableEscrow.sol` | ~53 | Escrow (ERC-20 only) |
+| `IAccountFactory.sol` | ~16 | Factory interface |
+| `IIdentityAccount.sol` | ~17 | Account interface |
+| `AccountFactory.sol` | ~51 | Factory using EIP-1167 clones |
+| `IdentityAccount.sol` | ~40 | Account with `execute` + `receive` |
 
 ## Relationship
 
-ERC-8186 depends on ERC-8185 — the escrow calls `ownerOf(bytes32)` on the registry to determine where to send funds. The registry has no dependency on the escrow.
+ERC-8186 depends on ERC-8185 — the account calls `ownerOf(bytes32)` on the registry to determine who can execute calls. The registry has no dependency on the account.
 
 ## Production Implementation
 
-A full implementation with BeaconProxy upgradeability, Splits Warehouse integration, namespace-specific verifiers, a TypeScript SDK, and backend signing services is at [ethereum-canonical-registry](https://github.com/carlbarrdahl/ethereum-canonical-registry).
+A full implementation with BeaconProxy upgradeability, namespace-specific verifiers, a TypeScript SDK, and backend signing services is at [ethereum-canonical-registry](https://github.com/carlbarrdahl/ethereum-canonical-registry).

@@ -1,19 +1,19 @@
-# ERC-8186: Claimable Escrow — Reference Implementation
+# ERC-8186: Identity Account — Reference Implementation
 
-Minimal, self-contained reference implementation of the Claimable Escrow standard.
+Minimal, self-contained reference implementation of the Identity Account standard.
 
 ## Contracts
 
 | File | Description |
 |------|-------------|
-| `IEscrowFactory.sol` | Factory interface |
-| `IClaimableEscrow.sol` | Escrow interface |
-| `EscrowFactory.sol` | Minimal factory using EIP-1167 clones |
-| `ClaimableEscrow.sol` | Minimal escrow (ERC-20 only) |
+| `IAccountFactory.sol` | Factory interface |
+| `IIdentityAccount.sol` | Account interface |
+| `AccountFactory.sol` | Minimal factory using EIP-1167 clones |
+| `IdentityAccount.sol` | Minimal account with `execute` + `receive` |
 
 ## Notes
 
 - This implementation uses EIP-1167 minimal proxies for simplicity. Production deployments may use BeaconProxy for upgradeability (as in the [full implementation](https://github.com/carlbarrdahl/ethereum-canonical-registry)).
-- Only ERC-20 tokens are supported. The full implementation additionally supports Splits Warehouse deposits.
-- No external dependencies — all ERC-20 interaction is done via low-level calls.
+- The `execute` function allows the registered owner to make any call through the account. Token withdrawals, protocol interactions, and any other on-chain action are all performed via `execute`.
+- No external dependencies — all interaction is done via low-level calls.
 - The factory can be embedded into the registry contract or deployed standalone.

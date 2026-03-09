@@ -15,4 +15,4 @@ Minimal, self-contained reference implementation of the Off-Chain Entity Registr
 
 - This implementation uses a simple `admin` address for access control. Production deployments should use a more robust governance mechanism.
 - The `OracleVerifier` is one possible verifier implementation. The standard supports any verification mechanism (ZK proofs, DNSSEC, etc.) through the `IVerifier` interface.
-- This implementation does not include escrow functionality. See [ERC-8186](../../erc-8186-claimable-escrow.md) for the companion pre-funding standard.
+- This implementation does not include account functionality. See [ERC-8186](../../erc-8186-identity-account.md) for the companion identity account standard.

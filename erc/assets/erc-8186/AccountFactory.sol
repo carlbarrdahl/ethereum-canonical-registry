@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.20;
 
-import {IEscrowFactory} from "./IEscrowFactory.sol";
-import {ClaimableEscrow} from "./ClaimableEscrow.sol";
+import {IAccountFactory} from "./IAccountFactory.sol";
+import {IdentityAccount} from "./IdentityAccount.sol";
 
-/// @title EscrowFactory — Reference Implementation
+/// @title AccountFactory — Reference Implementation
 /// @notice Deploys one minimal proxy per identifier at a deterministic address.
 ///         Uses a simple CREATE2 clone pattern. Production implementations may
 ///         use BeaconProxy for upgradeability.
-contract EscrowFactory is IEscrowFactory {
+contract AccountFactory is IAccountFactory {
     address public immutable registry;
     address public immutable implementation;
 
     constructor(address registry_) {
         registry = registry_;
-        implementation = address(new ClaimableEscrow());
+        implementation = address(new IdentityAccount());
     }
 
     function predictAddress(bytes32 id) public view returns (address) {
@@ -24,16 +24,16 @@ contract EscrowFactory is IEscrowFactory {
         )))));
     }
 
-    function deployEscrow(bytes32 id) external returns (address escrow) {
+    function deployAccount(bytes32 id) external returns (address account) {
         require(predictAddress(id).code.length == 0, "already deployed");
         bytes memory code = _creationCode(id);
         assembly {
-            escrow := create2(0, add(code, 0x20), mload(code), id)
+            account := create2(0, add(code, 0x20), mload(code), id)
         }
-        require(escrow != address(0), "deploy failed");
+        require(account != address(0), "deploy failed");
 
-        ClaimableEscrow(escrow).initialize(registry, id);
-        emit EscrowDeployed(id, escrow);
+        IdentityAccount(payable(account)).initialize(registry, id);
+        emit AccountDeployed(id, account);
     }
 
     /// @dev Minimal clone creation code that deploys a proxy delegating to `implementation`.
@@ -41,7 +41,6 @@ contract EscrowFactory is IEscrowFactory {
     function _creationCode(bytes32) private view returns (bytes memory) {
         address impl = implementation;
         return abi.encodePacked(
-            // EIP-1167 minimal proxy creation code
             hex"3d602d80600a3d3981f3363d3d373d3d3d363d73",
             impl,
             hex"5af43d82803e903d91602b57fd5bf3"

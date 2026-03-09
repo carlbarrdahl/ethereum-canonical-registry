@@ -213,7 +213,7 @@ A registry deployment MAY replace a verifier for any namespace at any time. Exis
 
 1. Aliases MUST resolve through exactly one level of indirection. Chaining (an alias pointing to another alias) MUST NOT be allowed.
 2. When identifiers are linked, the alias's owner record is deleted. `ownerOf(aliasId)` MUST return the primary's owner.
-3. Each identifier's associated state (e.g. escrow, deposits) remains separate. Linking only affects ownership resolution.
+3. Each identifier's associated state (e.g. account, deposits) remains separate. Linking only affects ownership resolution.
 
 ### Revocation Semantics
 
@@ -260,7 +260,7 @@ A minimal reference implementation is provided in [assets/erc-8185](../assets/er
 - [`OffChainEntityRegistry.sol`](../assets/erc-8185/OffChainEntityRegistry.sol) — registry with claim, revoke, link, unlink
 - [`OracleVerifier.sol`](../assets/erc-8185/OracleVerifier.sol) — example EIP-712 oracle verifier
 
-The implementation has no external dependencies and is intentionally minimal. A more complete implementation with beacon proxy escrows, namespace-specific verifiers, and a TypeScript SDK is available at [ethereum-canonical-registry](https://github.com/carlbarrdahl/ethereum-canonical-registry).
+The implementation has no external dependencies and is intentionally minimal. A more complete implementation with beacon proxy identity accounts, namespace-specific verifiers, and a TypeScript SDK is available at [ethereum-canonical-registry](https://github.com/carlbarrdahl/ethereum-canonical-registry).
 
 ## Security Considerations
 
