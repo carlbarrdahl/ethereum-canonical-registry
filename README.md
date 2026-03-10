@@ -4,7 +4,7 @@
 
 A shared on-chain registry that maps off-chain identifiers (GitHub repos, DNS domains) to Ethereum addresses — deployed once per chain, readable by any protocol.
 
-Every identifier gets a deterministic deposit address before its owner has ever interacted with Ethereum. Funds accumulate there until the owner claims and withdraws.
+Every identifier gets a deterministic deposit address (an identity account) before its owner has ever interacted with Ethereum. Funds accumulate there until the owner claims and takes control.
 
 > **Status:** Research prototype. Contracts are not audited. Do not use in production.
 
@@ -28,9 +28,9 @@ const state = await sdk.registry.resolveIdentifier("github", "org/repo");
 // state.depositAddress — where funders should send tokens
 // state.owner          — null if unclaimed
 
-// Pass a token address to also fetch the claimable balance
+// Pass a token address to also fetch the balance
 const state = await sdk.registry.resolveIdentifier("github", "org/repo", tokenAddress);
-// state.balance        — claimable token balance at the deposit address
+// state.balance        — token balance at the deposit address
 ```
 
 ### Parse URLs
@@ -83,15 +83,21 @@ const { proof } = await res.json();
 await sdk.registry.claim("dns", "example.com", proof);
 ```
 
-## Withdraw Funds
+## Execute Actions
 
-Once claimed, pull all accumulated funds to the registered owner:
+Once claimed, the owner controls the identity account via `execute`. The SDK provides helpers for common operations:
 
 ```ts
-await sdk.escrow.withdraw(state.depositAddress, tokenAddress);
+// Transfer ERC-20 tokens out of the identity account
+const { target, data } = sdk.account.encodeERC20Transfer(tokenAddress, recipient, amount);
+await sdk.account.execute(state.depositAddress, target, data);
+
+// Withdraw from a Splits Warehouse
+const call = sdk.account.encodeWarehouseWithdraw(warehouseAddress, state.depositAddress, tokenAddress);
+await sdk.account.execute(state.depositAddress, call.target, call.data);
 ```
 
-Anyone can call `withdraw` — funds always go to the registered owner, not the caller.
+Only the registered owner can call `execute` — the identity account verifies ownership through the registry.
 
 ## On-Chain Integration
 
@@ -124,7 +130,7 @@ function IdentifierCard({ id }: { id: `0x${string}` }) {
   return (
     <div>
       <p>Owner: {data?.owner ?? "Unclaimed"}</p>
-      <p>Deposit: {data?.escrowAddress}</p>
+      <p>Deposit: {data?.accountAddress}</p>
     </div>
   );
 }
@@ -134,7 +140,7 @@ function IdentifierCard({ id }: { id: `0x${string}` }) {
 
 ```
 packages/
-  contracts/   — Solidity contracts (CanonicalRegistry, ClaimableEscrow, verifiers)
+  contracts/   — Solidity contracts (CanonicalRegistry, IdentityAccount, verifiers)
   sdk/         — TypeScript SDK + React hooks
   indexer/     — Ponder event indexer
   ui/          — Shared Shadcn UI components
