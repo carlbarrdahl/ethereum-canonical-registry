@@ -3,11 +3,11 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "My Wallet",
   description:
-    "View and claim your earnings from strategy distributions. Manage your claimable balances from the Splits Warehouse.",
+    "View your claimed identifiers and manage your identity accounts.",
   openGraph: {
-    title: "My Wallet - support.eth curator",
+    title: "My Wallet - Canonical Registry",
     description:
-      "Claim your earnings from public goods funding strategy distributions.",
+      "View your claimed identifiers and manage your identity accounts.",
   },
 };
 

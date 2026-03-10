@@ -2,7 +2,7 @@ import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 import TestTokensModule from "./TestTokens.js";
 
 /**
- * Local development: deploys SplitsWarehouse, ClaimableEscrow (impl),
+ * Local development: deploys SplitsWarehouse, IdentityAccount (impl),
  * CanonicalRegistry, DnsVerifier, GitHubVerifier, and test tokens.
  *
  * For Sepolia use Registry.sepolia.ts with --parameters.
@@ -16,13 +16,10 @@ export default buildModule("DeployModule", (m) => {
     "SPW",
   ]);
 
-  // Deploy escrow implementation (warehouse is immutable in impl constructor)
-  const escrowImpl = m.contract("ClaimableEscrow", [splitsWarehouse]);
+  const accountImpl = m.contract("IdentityAccount", []);
 
-  // Deploy registry with escrow impl and deployer as admin
-  const registry = m.contract("CanonicalRegistry", [escrowImpl, deployer]);
+  const registry = m.contract("CanonicalRegistry", [accountImpl, deployer]);
 
-  // Deploy verifiers (registry, trustedSigner=deployer, admin=deployer)
   const dnsVerifier = m.contract("DnsVerifier", [
     registry,
     deployer,
@@ -34,16 +31,14 @@ export default buildModule("DeployModule", (m) => {
     deployer,
   ]);
 
-  // Register verifiers on the registry
   m.call(registry, "setVerifier", ["dns", dnsVerifier], { id: "SetDnsVerifier" });
   m.call(registry, "setVerifier", ["github", gitHubVerifier], { id: "SetGitHubVerifier" });
 
-  // Deploy test tokens
   const testTokensModule = m.useModule(TestTokensModule);
 
   return {
     registry,
-    escrowImpl,
+    accountImpl,
     splitsWarehouse,
     dnsVerifier,
     gitHubVerifier,

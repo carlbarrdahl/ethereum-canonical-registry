@@ -75,7 +75,7 @@ function getTestnetTokens(chainId: string): ChainTokens {
     | Record<string, { address: string }>
     | undefined;
 
-  if (!d) return {};
+  if (!d) return { ETH: ETH_TOKEN };
 
   const tokens: ChainTokens = {
     ETH: ETH_TOKEN, // Always include native ETH

@@ -32,7 +32,6 @@ export const metadata: Metadata = {
     "ethereum",
     "github",
     "canonical registry",
-    "escrow",
   ],
   authors: [{ name: "Canonical Registry" }],
   openGraph: {

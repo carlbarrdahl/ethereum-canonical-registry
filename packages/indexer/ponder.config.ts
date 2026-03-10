@@ -11,15 +11,12 @@ import { http } from "viem";
 
 import deployments from "@ethereum-canonical-registry/contracts/deployments.json";
 
-// Environment detection
 const isDev = process.env.NODE_ENV === "development";
 
-// Define which chains to index based on environment
 const activeChains = {
   ...(isDev ? { hardhat } : { sepolia }),
 };
 
-// RPC URLs per chain with load balancing and rate limiting
 function getRpcTransport(chainId: number) {
   switch (chainId) {
     case hardhat.id:
@@ -88,16 +85,11 @@ function getRpcTransport(chainId: number) {
   }
 }
 
-// Build chains config with load-balanced RPC
 const chains: Record<string, ChainConfig> = Object.fromEntries(
   Object.entries(activeChains).map(([name, { id }]) => [
     name,
     { id, rpc: getRpcTransport(id) },
   ]),
-);
-
-const EscrowDeployedEvent = parseAbiItem(
-  "event EscrowDeployed(bytes32 indexed id, address escrow)",
 );
 
 function getDeployment(chainId: number, contractName: string) {
@@ -124,20 +116,6 @@ export default createConfig({
       chain: forChains((id) => {
         const d = getDeployment(id, "CanonicalRegistry");
         return { address: d?.address, startBlock: d?.startBlock ?? 0 };
-      }),
-    },
-    ClaimableEscrow: {
-      abi: getDeployment(hardhat.id, "ClaimableEscrow").abi,
-      chain: forChains((id) => {
-        const registryDeployment = getDeployment(id, "CanonicalRegistry");
-        return {
-          address: factory({
-            address: registryDeployment?.address,
-            event: EscrowDeployedEvent,
-            parameter: "escrow",
-          }),
-          startBlock: registryDeployment?.startBlock ?? 0,
-        };
       }),
     },
   },

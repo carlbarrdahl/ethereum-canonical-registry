@@ -5,14 +5,10 @@ import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import type {
   Identifier,
   IdentifierAlias,
-  Withdrawal,
-  WarehouseBalance,
   Page,
   QueryVariables,
   IdentifierFilter,
   AliasFilter,
-  WithdrawalFilter,
-  WarehouseBalanceFilter,
   RegistryStats,
 } from "../lib/indexer";
 
@@ -55,19 +51,6 @@ export function useAliases(
   return useQuery({
     queryKey: ["aliases", variables],
     queryFn: () => sdk?.indexer?.alias.query(variables) ?? null,
-    enabled: Boolean(sdk?.indexer) && (opts?.enabled ?? true),
-    refetchInterval: opts?.refetchInterval,
-  });
-}
-
-export function useEscrowWithdrawals(
-  variables: QueryVariables<WithdrawalFilter> = {},
-  opts?: QueryOptions,
-): UseQueryResult<Page<Withdrawal> | null> {
-  const { sdk } = useCanonicalRegistrySDK();
-  return useQuery({
-    queryKey: ["escrowWithdrawals", variables],
-    queryFn: () => sdk?.indexer?.withdrawal.query(variables) ?? null,
     enabled: Boolean(sdk?.indexer) && (opts?.enabled ?? true),
     refetchInterval: opts?.refetchInterval,
   });
