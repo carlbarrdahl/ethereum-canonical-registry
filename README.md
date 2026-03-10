@@ -1,7 +1,5 @@
 # Ethereum Canonical Registry
 
-[![CI](https://github.com/carlbarrdahl/ethereum-canonical-registry/actions/workflows/ci.yml/badge.svg)](https://github.com/carlbarrdahl/ethereum-canonical-registry/actions/workflows/ci.yml)
-
 A shared on-chain registry that maps off-chain identifiers (GitHub repos, DNS domains) to Ethereum addresses — deployed once per chain, readable by any protocol.
 
 Every identifier gets a deterministic deposit address (an identity account) before its owner has ever interacted with Ethereum. Funds accumulate there until the owner claims and takes control.
