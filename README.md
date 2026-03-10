@@ -23,23 +23,21 @@ import { CanonicalRegistrySDK } from "@ethereum-canonical-registry/sdk";
 
 const sdk = new CanonicalRegistrySDK();
 
-const state = await sdk.registry.resolveIdentifier("github", "org/repo");
+// Accepts URLs, namespace:value, or domain names
+const state = await sdk.registry.resolve("github.com/org/repo");
 // state.id             — bytes32 identifier
 // state.depositAddress — where funders should send tokens
 // state.owner          — null if unclaimed
 
 // Pass a token address to also fetch the balance
-const state = await sdk.registry.resolveIdentifier("github", "org/repo", tokenAddress);
+const state = await sdk.registry.resolve("github.com/org/repo", tokenAddress);
 // state.balance        — token balance at the deposit address
-```
 
-### Parse URLs
-
-```ts
-import { parseUrl, toId } from "@ethereum-canonical-registry/sdk";
-
-const { namespace, canonicalString } = parseUrl("https://github.com/org/repo");
-const id = toId(namespace, canonicalString);
+// All of these work:
+sdk.registry.resolve("github:org/repo");
+sdk.registry.resolve("https://github.com/org/repo");
+sdk.registry.resolve("example.com");
+sdk.registry.resolve("npmjs.com/package/foo");
 ```
 
 ## Fund an Identifier
@@ -68,6 +66,7 @@ await sdk.registry.claim("github", "org/repo", proof);
 ```
 
 ### DNS
+
 
 ```ts
 // 1. Add a TXT record: _eth-canonical.example.com → "0xYourAddress"

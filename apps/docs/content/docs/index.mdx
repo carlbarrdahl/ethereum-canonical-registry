@@ -55,15 +55,17 @@ Supported chains: `31337` (Hardhat), `11155111` (Sepolia), `1` (Mainnet — plan
 ### Resolve an Identifier
 
 ```typescript
-const state = await sdk.registry.resolveIdentifier(
-  'github',
-  'org/repo',
-  tokenAddress,
-);
+// Accepts URLs, namespace:value, or domain names
+const state = await sdk.registry.resolve("github.com/org/repo", tokenAddress);
 // state.id             — bytes32 identifier
 // state.depositAddress — where funders send tokens
 // state.owner          — null if unclaimed
 // state.balance        — current ERC-20 balance at deposit address
+
+// All of these work:
+sdk.registry.resolve("github:org/repo");
+sdk.registry.resolve("https://github.com/org/repo");
+sdk.registry.resolve("example.com");
 ```
 
 ### Fund an Identifier

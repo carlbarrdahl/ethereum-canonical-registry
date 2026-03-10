@@ -148,7 +148,9 @@ Structured requirements using [EARS notation](https://alistairmavin.com/ears/) (
 
 **REQ-SDK2** The SDK shall provide pure, RPC-free utilities: `toId(namespace, canonicalString)`, `canonicalise(value)`, `parseUrl(input)`, `formatIdentifier(namespace, canonicalString)`, and `parseIdentifier(identifier)`.
 
-**REQ-SDK3** The SDK shall provide `registry.ownerOf(id)`, `registry.predictAddress(id)`, `registry.claim(namespace, canonicalString, proof)`, `registry.revoke(namespace, canonicalString)`, `registry.linkIds(primaryId, aliasIds)`, `registry.unlinkIds(primaryId, aliasIds)`, `registry.deployAccount(id)`, `registry.isAccountDeployed(id)`, `registry.resolveIdentifier(namespace, canonicalString, token?)`, and `registry.setVerifier(namespace, verifier)`.
+**REQ-SDK3** The SDK shall provide `registry.ownerOf(id)`, `registry.predictAddress(id)`, `registry.claim(namespace, canonicalString, proof)`, `registry.revoke(namespace, canonicalString)`, `registry.linkIds(primaryId, aliasIds)`, `registry.unlinkIds(primaryId, aliasIds)`, `registry.deployAccount(id)`, `registry.isAccountDeployed(id)`, `registry.resolve(input, token?)`, `registry.resolveIdentifier(namespace, canonicalString, token?)`, and `registry.setVerifier(namespace, verifier)`.
+
+**REQ-SDK3a** `registry.resolve` shall accept any free-form identifier string (URLs, `namespace:value`, domain names) and return the same `IdentifierState` as `resolveIdentifier`.
 
 **REQ-SDK4** The SDK shall provide `account.execute(accountAddress, target, data, value?)` for executing arbitrary calls through an identity account.
 

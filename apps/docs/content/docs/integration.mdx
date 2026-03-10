@@ -12,13 +12,10 @@ The registry serves different roles depending on who you are. This page covers i
 You don't need to know the registry exists. Compute the deposit address for any identifier and transfer tokens directly to it — before or after the identifier is claimed.
 
 ```ts
-import { CanonicalRegistrySDK } from '@ethereum-canonical-registry/sdk';
+import { CanonicalRegistrySDK } from "@ethereum-canonical-registry/sdk";
 
 const sdk = new CanonicalRegistrySDK();
-const { depositAddress } = await sdk.registry.resolveIdentifier(
-  'github',
-  'org/repo',
-);
+const { depositAddress } = await sdk.registry.resolve("github.com/org/repo");
 
 await token.transfer(depositAddress, amount);
 ```
@@ -56,11 +53,7 @@ For protocols building allocation systems — grant programs, funding distributi
 The resolved address is stored as a plain Ethereum address in the upstream protocol. No knowledge of the registry is required at distribution time.
 
 ```ts
-const state = await sdk.registry.resolveIdentifier(
-  'github',
-  'org/repo',
-  tokenAddress,
-);
+const state = await sdk.registry.resolve("github.com/org/repo", tokenAddress);
 
 const recipient = state.owner ?? state.depositAddress;
 ```

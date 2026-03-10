@@ -54,11 +54,7 @@ Funders send ERC-20 tokens directly to this address. Funds accumulate whether or
 The SDK handles address derivation internally:
 
 ```typescript
-const state = await sdk.registry.resolveIdentifier(
-  'github',
-  'org/repo',
-  tokenAddress,
-);
+const state = await sdk.registry.resolve("github.com/org/repo", tokenAddress);
 // state.depositAddress — the deterministic identity account address
 ```
 
@@ -165,15 +161,16 @@ Rules:
 The SDK provides a convenience method to resolve full state in parallel:
 
 ```typescript
-const state = await sdk.registry.resolveIdentifier(
-  'github',
-  'org/repo',
-  tokenAddress,
-);
+const state = await sdk.registry.resolve("github.com/org/repo", tokenAddress);
 // state.id             — bytes32 identifier
 // state.depositAddress — where funders send tokens
 // state.owner          — null if unclaimed
 // state.balance        — current ERC-20 balance at deposit address
+
+// Also accepts other formats:
+sdk.registry.resolve("github:org/repo");
+sdk.registry.resolve("https://github.com/org/repo");
+sdk.registry.resolve("example.com");
 ```
 
 ## Design Principles
