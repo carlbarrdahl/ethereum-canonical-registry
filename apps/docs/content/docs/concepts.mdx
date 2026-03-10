@@ -25,9 +25,9 @@ Examples:
 You can compute this locally — no RPC call needed:
 
 ```typescript
-import { toId, canonicalise } from "@ethereum-canonical-registry/sdk";
+import { toId, canonicalise } from '@ethereum-canonical-registry/sdk';
 
-const id = toId("github", canonicalise("Org/Repo")); // lowercased to "org/repo"
+const id = toId('github', canonicalise('Org/Repo')); // lowercased to "org/repo"
 ```
 
 ## Namespaces
@@ -55,8 +55,8 @@ The SDK handles address derivation internally:
 
 ```typescript
 const state = await sdk.registry.resolveIdentifier(
-  "github",
-  "org/repo",
+  'github',
+  'org/repo',
   tokenAddress,
 );
 // state.depositAddress — the deterministic identity account address
@@ -166,8 +166,8 @@ The SDK provides a convenience method to resolve full state in parallel:
 
 ```typescript
 const state = await sdk.registry.resolveIdentifier(
-  "github",
-  "org/repo",
+  'github',
+  'org/repo',
   tokenAddress,
 );
 // state.id             — bytes32 identifier

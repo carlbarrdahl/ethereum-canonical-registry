@@ -12,12 +12,12 @@ The registry serves different roles depending on who you are. This page covers i
 You don't need to know the registry exists. Compute the deposit address for any identifier and transfer tokens directly to it — before or after the identifier is claimed.
 
 ```ts
-import { CanonicalRegistrySDK } from "@ethereum-canonical-registry/sdk";
+import { CanonicalRegistrySDK } from '@ethereum-canonical-registry/sdk';
 
 const sdk = new CanonicalRegistrySDK();
 const { depositAddress } = await sdk.registry.resolveIdentifier(
-  "github",
-  "org/repo",
+  'github',
+  'org/repo',
 );
 
 await token.transfer(depositAddress, amount);
@@ -57,8 +57,8 @@ The resolved address is stored as a plain Ethereum address in the upstream proto
 
 ```ts
 const state = await sdk.registry.resolveIdentifier(
-  "github",
-  "org/repo",
+  'github',
+  'org/repo',
   tokenAddress,
 );
 
@@ -71,7 +71,7 @@ const recipient = state.owner ?? state.depositAddress;
 2. **Claim** — submits the proof on-chain and deploys the identity account:
 
 ```ts
-await sdk.registry.claim("github", "org/repo", proof);
+await sdk.registry.claim('github', 'org/repo', proof);
 ```
 
 3. **Execute** — interact with your identity account using `execute`. The SDK provides helpers for common operations:

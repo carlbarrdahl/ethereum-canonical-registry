@@ -45,7 +45,7 @@ The **Canonical Registry** maps off-chain identifiers (GitHub repositories, DNS 
 ### SDK Setup
 
 ```typescript
-import { CanonicalRegistrySDK } from "@ethereum-canonical-registry/sdk";
+import { CanonicalRegistrySDK } from '@ethereum-canonical-registry/sdk';
 
 const sdk = new CanonicalRegistrySDK(walletClient);
 ```
@@ -56,8 +56,8 @@ Supported chains: `31337` (Hardhat), `11155111` (Sepolia), `1` (Mainnet — plan
 
 ```typescript
 const state = await sdk.registry.resolveIdentifier(
-  "github",
-  "org/repo",
+  'github',
+  'org/repo',
   tokenAddress,
 );
 // state.id             — bytes32 identifier
@@ -76,7 +76,7 @@ await tokenContract.transfer(state.depositAddress, amount);
 
 ```typescript
 // 1. Claim with a proof from the oracle signing service
-await sdk.registry.claim("github", "org/repo", proofBytes);
+await sdk.registry.claim('github', 'org/repo', proofBytes);
 
 // 2. Transfer tokens out of the identity account
 const { target, data } = sdk.account.encodeERC20Transfer(
@@ -98,12 +98,12 @@ await sdk.account.execute(state.depositAddress, call.target, call.data);
 ### Parse URLs
 
 ```typescript
-import { parseUrl } from "@ethereum-canonical-registry/sdk";
+import { parseUrl } from '@ethereum-canonical-registry/sdk';
 
-parseUrl("https://github.com/org/repo");
+parseUrl('https://github.com/org/repo');
 // → { namespace: "github", canonicalString: "org/repo", formatted: "github:org/repo" }
 
-parseUrl("example.com");
+parseUrl('example.com');
 // → { namespace: "dns", canonicalString: "example.com", formatted: "dns:example.com" }
 ```
 
@@ -116,7 +116,7 @@ import {
   CanonicalRegistryProvider,
   useIdentifier,
   useClaim,
-} from "@ethereum-canonical-registry/sdk";
+} from '@ethereum-canonical-registry/sdk';
 
 function App() {
   return <CanonicalRegistryProvider>{/* ... */}</CanonicalRegistryProvider>;
@@ -128,7 +128,7 @@ function IdentifierCard({ id }: { id: `0x${string}` }) {
 
   return (
     <div>
-      <p>Owner: {data?.owner ?? "Unclaimed"}</p>
+      <p>Owner: {data?.owner ?? 'Unclaimed'}</p>
       <p>Deposit: {data?.accountAddress}</p>
     </div>
   );
@@ -152,7 +152,7 @@ ethereum-canonical-registry/
 
 ## Quick Links
 
-import { Card, Cards } from "fumadocs-ui/components/card";
+import { Card, Cards } from 'fumadocs-ui/components/card';
 
 <Cards>
   <Card
