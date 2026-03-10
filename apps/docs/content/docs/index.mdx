@@ -5,7 +5,7 @@ description: Map off-chain identifiers to Ethereum addresses — permissionlessl
 
 # Canonical Registry
 
-The **Canonical Registry** maps off-chain identifiers (GitHub repositories, DNS domains) to Ethereum addresses. Anyone can send ERC-20 tokens to a deterministic deposit address for any identifier — even before the owner has claimed it. When the owner proves ownership, they can withdraw accumulated funds.
+The **Canonical Registry** maps off-chain identifiers (GitHub repositories, DNS domains) to Ethereum addresses. Anyone can send ERC-20 tokens to a deterministic deposit address for any identifier — even before the owner has claimed it. When the owner proves ownership, they control the identity account and can execute arbitrary calls through it.
 
 ## How It Works
 
@@ -13,10 +13,10 @@ The **Canonical Registry** maps off-chain identifiers (GitHub repositories, DNS 
   Anyone computes deposit address (no RPC call needed)
              │
              ▼
-  ┌─────────────────────────────────┐
-  │   github:org/repo               │
-  │   0x4a3b...  (ClaimableEscrow)  │◀── Funders send tokens here
-  └─────────────────────────────────┘
+  ┌─────────────────────────────────────┐
+  │   github:org/repo                   │
+  │   0x4a3b...  (IdentityAccount)      │◀── Funders send tokens here
+  └─────────────────────────────────────┘
              │
   Owner proves GitHub/DNS ownership
              │
@@ -24,21 +24,21 @@ The **Canonical Registry** maps off-chain identifiers (GitHub repositories, DNS 
   CanonicalRegistry records owner
              │
              ▼
-  withdraw(token) → funds sent to owner
+  execute(target, data, value) → interact with any contract
 ```
 
 1. **Compute**: Anyone derives the deterministic deposit address for any identifier — pure local calculation, no wallet needed
 2. **Fund**: Send ERC-20 tokens directly to the deposit address at any time — before or after claiming
 3. **Claim**: Owner submits a verifiable proof (signed by the oracle backend after GitHub OAuth or DNS TXT check)
-4. **Withdraw**: Anyone calls `withdraw(token)` — funds always go to the registered owner
+4. **Execute**: Owner calls `execute(target, data, value)` on the identity account to transfer tokens, interact with protocols, or perform any on-chain action
 
 ## Value Proposition
 
-| Stakeholder | Value |
-| --- | --- |
-| **Funders** | Send tokens to any open-source project or domain today, even if the owner hasn't set up a wallet yet |
-| **Maintainers** | Claim accumulated funds any time after proving ownership — no setup required in advance |
-| **Ecosystem** | Canonical, collision-free namespace for any off-chain identity on Ethereum |
+| Stakeholder     | Value                                                                                                |
+| --------------- | ---------------------------------------------------------------------------------------------------- |
+| **Funders**     | Send tokens to any open-source project or domain today, even if the owner hasn't set up a wallet yet |
+| **Maintainers** | Claim accumulated funds any time after proving ownership — no setup required in advance              |
+| **Ecosystem**   | Canonical, collision-free namespace for any off-chain identity on Ethereum                           |
 
 ## Getting Started
 
@@ -55,7 +55,11 @@ Supported chains: `31337` (Hardhat), `11155111` (Sepolia), `1` (Mainnet — plan
 ### Resolve an Identifier
 
 ```typescript
-const state = await sdk.registry.resolveIdentifier("github", "org/repo", tokenAddress);
+const state = await sdk.registry.resolveIdentifier(
+  "github",
+  "org/repo",
+  tokenAddress,
+);
 // state.id             — bytes32 identifier
 // state.depositAddress — where funders send tokens
 // state.owner          — null if unclaimed
@@ -68,14 +72,27 @@ const state = await sdk.registry.resolveIdentifier("github", "org/repo", tokenAd
 await tokenContract.transfer(state.depositAddress, amount);
 ```
 
-### Claim and Withdraw
+### Claim and Execute
 
 ```typescript
 // 1. Claim with a proof from the oracle signing service
 await sdk.registry.claim("github", "org/repo", proofBytes);
 
-// 2. Withdraw accumulated funds to the registered owner
-await sdk.escrow.withdraw(state.depositAddress, tokenAddress);
+// 2. Transfer tokens out of the identity account
+const { target, data } = sdk.account.encodeERC20Transfer(
+  tokenAddress,
+  recipientAddress,
+  amount,
+);
+await sdk.account.execute(state.depositAddress, target, data);
+
+// 3. Or withdraw from a Splits Warehouse
+const call = sdk.account.encodeWarehouseWithdraw(
+  warehouseAddress,
+  state.depositAddress,
+  tokenAddress,
+);
+await sdk.account.execute(state.depositAddress, call.target, call.data);
 ```
 
 ### Parse URLs
@@ -112,7 +129,7 @@ function IdentifierCard({ id }: { id: `0x${string}` }) {
   return (
     <div>
       <p>Owner: {data?.owner ?? "Unclaimed"}</p>
-      <p>Deposit: {data?.escrowAddress}</p>
+      <p>Deposit: {data?.accountAddress}</p>
     </div>
   );
 }
@@ -138,16 +155,41 @@ ethereum-canonical-registry/
 import { Card, Cards } from "fumadocs-ui/components/card";
 
 <Cards>
-  <Card title="Concepts" href="/docs/concepts" description="Mental model — identifiers, namespaces, verifiers, escrows, aliases" />
-  <Card title="Architecture" href="/docs/architecture" description="System design, capital flows, technical decisions" />
-  <Card title="Integration Guide" href="/docs/integration" description="Patterns for funders, on-chain consumers, distribution protocols, and registrants" />
-  <Card title="Verifiers" href="/docs/verifiers" description="Oracle verifiers, EIP-712 proofs, and the path to ZK" />
-  <Card title="Security" href="/docs/security" description="Trust model, security considerations, known limitations" />
-  <Card title="Requirements" href="/docs/requirements" description="EARS requirements specification" />
+  <Card
+    title="Concepts"
+    href="/docs/concepts"
+    description="Mental model — identifiers, namespaces, verifiers, identity accounts, aliases"
+  />
+  <Card
+    title="Architecture"
+    href="/docs/architecture"
+    description="System design, capital flows, technical decisions"
+  />
+  <Card
+    title="Integration Guide"
+    href="/docs/integration"
+    description="Patterns for funders, on-chain consumers, distribution protocols, and registrants"
+  />
+  <Card
+    title="Verifiers"
+    href="/docs/verifiers"
+    description="Oracle verifiers, EIP-712 proofs, and the path to ZK"
+  />
+  <Card
+    title="Security"
+    href="/docs/security"
+    description="Trust model, security considerations, known limitations"
+  />
+  <Card
+    title="Requirements"
+    href="/docs/requirements"
+    description="EARS requirements specification"
+  />
 </Cards>
 
 ---
 
 <Callout type="info" title="Proof of Concept">
-  This is a proof of concept implementation. Contracts are not audited. Do not use in production.
+  This is a proof of concept implementation. Contracts are not audited. Do not
+  use in production.
 </Callout>

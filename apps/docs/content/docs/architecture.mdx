@@ -16,67 +16,65 @@ description: System design, capital flows, security model, and technical decisio
 │       ├── verifiers[namespace] ──▶ DnsVerifier / GitHubVerifier     │
 │       │                              (OracleVerifier base)           │
 │       │                                                              │
-│       └── beacon ──▶ ClaimableEscrow (impl)                         │
+│       └── beacon ──▶ IdentityAccount (impl)                         │
 │                            │                                         │
 │              CREATE2 proxies per identifier                          │
 │                            │                                         │
-│  Funders ──(ERC-20)──▶  0x4a3b... (escrow proxy)                   │
+│  Funders ──(ERC-20)──▶  0x4a3b... (account proxy)                   │
 │                            │                                         │
-│                       withdraw() ──▶ registered owner               │
-│                                                                      │
-│  SplitsWarehouse ◀── optional deposit path                          │
+│                       execute() ──▶ any target contract             │
 │                                                                      │
 ├──────────────────────────────────────────────────────────────────────┤
 │                         OFF-CHAIN                                    │
 │                                                                      │
 │  Oracle backend ──signs proofs──▶ Claimants                         │
 │                                                                      │
-│  Contracts ──events──▶ Indexer (Ponder) ◀──queries──▶ SDK ──▶ Web  │
+│ Contracts ──events──▶ Indexer (Ponder) ◀──queries──▶ SDK ──▶ Web │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
 ### On-Chain Layer
 
-| Contract | Purpose | Pattern |
-|---|---|---|
-| **CanonicalRegistry** | Manages identifier ownership, escrow deployment, verifier registry | Ownable singleton |
-| **ClaimableEscrow** | Holds funds per identifier; routes withdrawals to owner | BeaconProxy per identifier |
-| **UpgradeableBeacon** | Points all escrow proxies to the current implementation | OZ beacon |
-| **OracleVerifier** | Base EIP-712 verifier using a trusted backend signer | Abstract base |
-| **DnsVerifier** | Verifies DNS TXT record ownership via oracle | Extends OracleVerifier |
-| **GitHubVerifier** | Verifies GitHub repo ownership via oracle | Extends OracleVerifier |
-| **SplitsWarehouse** | ERC-6909 multi-token vault for escrowed balances | External singleton (0xSplits) |
+| Contract              | Purpose                                                             | Pattern                    |
+| --------------------- | ------------------------------------------------------------------- | -------------------------- |
+| **CanonicalRegistry** | Manages identifier ownership, account deployment, verifier registry | Ownable singleton          |
+| **IdentityAccount**   | Per-identifier smart account; owner can `execute` arbitrary calls   | BeaconProxy per identifier |
+| **UpgradeableBeacon** | Points all account proxies to the current implementation            | OZ beacon                  |
+| **OracleVerifier**    | Base EIP-712 verifier using a trusted backend signer                | Abstract base              |
+| **DnsVerifier**       | Verifies DNS TXT record ownership via oracle                        | Extends OracleVerifier     |
+| **GitHubVerifier**    | Verifies GitHub repo ownership via oracle                           | Extends OracleVerifier     |
 
 ### Off-Chain Layer
 
-| Component | Purpose |
-|---|---|
-| **Oracle backend** | Confirms off-chain ownership (DNS TXT, GitHub OAuth), signs EIP-712 proofs |
-| **Indexer** (Ponder) | Processes contract events, exposes queryable state via GraphQL + REST |
-| **SDK** (`@ethereum-canonical-registry/sdk`) | TypeScript client for contracts and indexer, React hooks, pure utils |
-| **Web App** (`@ethereum-canonical-registry/web`) | Next.js frontend |
+| Component                                        | Purpose                                                                    |
+| ------------------------------------------------ | -------------------------------------------------------------------------- |
+| **Oracle backend**                               | Confirms off-chain ownership (DNS TXT, GitHub OAuth), signs EIP-712 proofs |
+| **Indexer** (Ponder)                             | Processes contract events, exposes queryable state via GraphQL + REST      |
+| **SDK** (`@ethereum-canonical-registry/sdk`)     | TypeScript client for contracts and indexer, React hooks, pure utils       |
+| **Web App** (`@ethereum-canonical-registry/web`) | Next.js frontend                                                           |
 
 ---
 
 ## Capital Flow
 
 ```
-Funder ──(ERC-20 transfer)──▶ 0x4a3b... (ClaimableEscrow proxy)
+Funder ──(ERC-20 transfer)──▶ 0x4a3b... (IdentityAccount proxy)
                                         │
                          Owner claims identifier
                                         │
-                         withdraw(token) called (by anyone)
+                         execute(target, data, value)
                                         │
                                         ▼
-                              Registered owner receives funds
+                              Any on-chain interaction
+                              (transfer tokens, call protocols, etc.)
 ```
 
 1. Funder sends ERC-20 tokens to the deterministic deposit address
-2. Tokens accumulate in the `ClaimableEscrow` proxy (or Splits Warehouse if deposited there)
-3. After the owner claims the identifier with a valid proof, anyone can call `withdraw(token)`
-4. Funds route exclusively to the current registered owner — the caller receives nothing
+2. Tokens accumulate in the `IdentityAccount` proxy
+3. After the owner claims the identifier with a valid proof, they can call `execute` to interact with any contract
+4. The `execute` function checks `registry.ownerOf(id) == msg.sender` — only the registered owner can act
 
-The deposit address is stable and computable before the escrow proxy is deployed. Funders do not need to wait for the owner to claim.
+The deposit address is stable and computable before the account proxy is deployed. Funders do not need to wait for the owner to claim.
 
 ---
 
@@ -84,23 +82,22 @@ The deposit address is stable and computable before the escrow proxy is deployed
 
 ### Trust Assumptions
 
-| Actor | Trust Level | Capabilities |
-|---|---|---|
-| **Registry owner** | Trusted admin | Can update verifiers, upgrade escrow impl via beacon |
-| **Oracle signer** | Trusted for proofs | Signs claim proofs after off-chain verification; cannot affect existing ownership |
-| **Claimants** | Must prove ownership | Can claim only with a valid, unexpired oracle proof |
-| **Funders** | Trustless | Send tokens to deposit addresses; receive nothing back |
-| **Withdrawers** | Permissionless | Call `withdraw`; funds always go to registered owner, not caller |
+| Actor              | Trust Level          | Capabilities                                                                      |
+| ------------------ | -------------------- | --------------------------------------------------------------------------------- |
+| **Registry owner** | Trusted admin        | Can update verifiers, upgrade account impl via beacon                             |
+| **Oracle signer**  | Trusted for proofs   | Signs claim proofs after off-chain verification; cannot affect existing ownership |
+| **Claimants**      | Must prove ownership | Can claim only with a valid, unexpired oracle proof                               |
+| **Funders**        | Trustless            | Send tokens to deposit addresses; receive nothing back                            |
+| **Owner**          | Authenticated        | Only the registered owner can call `execute` on their identity account            |
 
 ### Non-Custodial Properties
 
-`ClaimableEscrow` has **no function to redirect funds to an arbitrary address**. The only exit path for funds is `withdraw(token)`, which sends to `registry.ownerOf(id)`. The registry owner can change verifiers or upgrade the escrow implementation, but cannot redirect funds from an existing escrow.
-
-`withdraw` is **permissionless** — anyone can trigger it. This prevents funds from being locked by an inactive owner.
+`IdentityAccount` restricts `execute` to the registered owner — `registry.ownerOf(id) == msg.sender`. No other address can move funds or interact through the account. The registry owner can change verifiers or upgrade the account implementation, but the `ownerOf` check ensures only the legitimate owner can execute calls.
 
 ### Verifier Security
 
 Oracle proofs are EIP-712 typed data bound to:
+
 - `registry` address (prevents cross-deployment replay)
 - `chainId` (prevents cross-chain replay)
 - `id` (specific identifier)
@@ -109,18 +106,18 @@ Oracle proofs are EIP-712 typed data bound to:
 
 The trusted signer key can be rotated via `setTrustedSigner` on the verifier. Existing claims are not affected by a signer rotation.
 
-### Escrow Upgradeability
+### Account Upgradeability
 
-The beacon pattern allows the registry owner to fix bugs in the escrow implementation via `upgradeEscrowImplementation(newImpl)` without changing any deposit addresses. All proxies automatically point to the new implementation after an upgrade. The upgrade cannot change which identifier an escrow belongs to or redirect withdrawals to a different owner — those invariants are enforced by `registry.ownerOf(id)`.
+The beacon pattern allows the registry owner to fix bugs in the account implementation via `upgradeAccountImplementation(newImpl)` without changing any deposit addresses. All proxies automatically point to the new implementation after an upgrade. The upgrade cannot change which identifier an account belongs to — that invariant is enforced by `registry.ownerOf(id)`.
 
 ### Known Limitations (POC)
 
-| Limitation | Risk | Production Solution |
-|---|---|---|
-| Oracle-based verification | Requires trusting the oracle backend | Replace with DNSSEC on-chain verification via ENS DNSSECImpl |
-| Single trusted signer | Key compromise allows fraudulent claims | Threshold signatures or HSM |
-| No claim timelock | Fresh claims immediately enable withdrawal | Add claim cooldown for large deposits |
-| Fee-on-transfer tokens | Balance calculations off | Explicit token allowlist or deposit accounting |
+| Limitation                | Risk                                      | Production Solution                                          |
+| ------------------------- | ----------------------------------------- | ------------------------------------------------------------ |
+| Oracle-based verification | Requires trusting the oracle backend      | Replace with DNSSEC on-chain verification via ENS DNSSECImpl |
+| Single trusted signer     | Key compromise allows fraudulent claims   | Threshold signatures or HSM                                  |
+| No claim timelock         | Fresh claims immediately enable execution | Add claim cooldown for large deposits                        |
+| Fee-on-transfer tokens    | Balance calculations off                  | Explicit token allowlist or deposit accounting               |
 
 ---
 
@@ -129,18 +126,28 @@ The beacon pattern allows the registry owner to fix bugs in the escrow implement
 ### CREATE2 for Deposit Addresses
 
 Using the identifier as the CREATE2 salt means the deposit address is:
+
 - Derivable from the identifier alone (no on-chain lookup)
 - Stable across re-deployments (same identifier → same address)
 - Unique per identifier (no collisions)
 
 Anyone can compute the address with `keccak256(abi.encode(namespace, canonicalString))` and the BeaconProxy initcode — the SDK handles this internally.
 
-### BeaconProxy for Escrows
+### BeaconProxy for Identity Accounts
 
 The beacon pattern is chosen over:
-- **Plain clones (EIP-1167)**: non-upgradeable; a bug in escrow logic cannot be fixed without redeploying all proxies to new addresses
+
+- **Plain clones (EIP-1167)**: non-upgradeable; a bug in account logic cannot be fixed without redeploying all proxies to new addresses
 - **Individual transparent proxies**: each proxy stores its own admin/implementation slot, costing more gas and providing no groupwide upgrade path
 - **Upgradeable proxies per clone**: same upgradeability as beacon but storage layout is shared across all instances, reducing per-proxy overhead
+
+### General-Purpose `execute`
+
+Rather than building specific withdrawal or protocol integration functions into the account contract, the `execute(target, data, value)` pattern delegates all interaction logic to the caller. This means:
+
+- No contract upgrade needed to support new protocols
+- The account can interact with any contract deployed in the future
+- The SDK provides helper functions (`encodeERC20Transfer`, `encodeWarehouseWithdraw`) for common operations
 
 ### abi.encode vs. abi.encodePacked
 
@@ -149,10 +156,7 @@ The beacon pattern is chosen over:
 ### Namespace-Scoped Verifiers
 
 A single `mapping(bytes32 => address) public verifiers` (keyed by `keccak256(bytes(namespace))`) allows:
+
 - Independent verification logic per namespace
 - Upgrades to one namespace without affecting others (e.g., migrate DNS to on-chain DNSSEC)
 - Adding new namespaces (npm packages, Twitter handles, etc.) without changing the registry
-
-### SplitsWarehouse Integration
-
-Escrows integrate with Splits Warehouse so funders can use Splits' batch deposit tools. `withdraw` first pulls any warehouse balance, then transfers the combined ERC-20 balance to the owner — a single call handles both paths.
