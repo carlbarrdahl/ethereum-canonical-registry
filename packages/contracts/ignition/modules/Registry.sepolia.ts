@@ -17,8 +17,8 @@ export default buildModule("DeployModuleSepolia", (m) => {
   const admin = m.getParameter<string>("admin");
   const trustedSigner = m.getParameter<string>("trustedSigner");
 
-  const escrowImpl = m.contract("ClaimableEscrow", [splitsWarehouse]);
-  const registry = m.contract("CanonicalRegistry", [escrowImpl, admin]);
+  const accountImpl = m.contract("IdentityAccount", []);
+  const registry = m.contract("CanonicalRegistry", [accountImpl, admin]);
 
   const dnsVerifier = m.contract("DnsVerifier", [
     registry,
@@ -38,7 +38,7 @@ export default buildModule("DeployModuleSepolia", (m) => {
 
   return {
     registry,
-    escrowImpl,
+    accountImpl,
     splitsWarehouse,
     dnsVerifier,
     gitHubVerifier,

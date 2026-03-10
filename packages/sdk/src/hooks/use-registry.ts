@@ -211,7 +211,7 @@ export function useUnlinkIds(
   });
 }
 
-export function useDeployEscrow(
+export function useDeployAccount(
   opts?: UseMutationOptions<
     { hash: `0x${string}` },
     Error,
@@ -224,15 +224,15 @@ export function useDeployEscrow(
   return useMutation({
     mutationFn: async ({ id }: { id: `0x${string}` }) => {
       if (!sdk) throw new Error("SDK not initialized");
-      return sdk.registry.deployEscrow(id);
+      return sdk.registry.deployAccount(id);
     },
     onSuccess: (data, variables, ...args) => {
-      toast.success("Escrow deployed");
+      toast.success("Account deployed");
       invalidate([["registry", "predictAddress", variables.id]]);
       opts?.onSuccess?.(data, variables, ...args);
     },
     onError: (error, ...args) => {
-      toast.error(error.message || "Failed to deploy escrow");
+      toast.error(error.message || "Failed to deploy account");
       opts?.onError?.(error, ...args);
     },
     ...opts,

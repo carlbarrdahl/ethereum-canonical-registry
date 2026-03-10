@@ -127,6 +127,21 @@ export function parseUrl(input: string): ParsedUrl {
     };
   }
 
+  if (host === "npmjs.com") {
+    // https://www.npmjs.com/package/foo → npm:foo
+    const pkgIdx = pathParts.indexOf("package");
+    const pkgName = pkgIdx !== -1 ? pathParts[pkgIdx + 1] : undefined;
+    if (pkgName) {
+      const canonicalString = pkgName.toLowerCase();
+      return {
+        namespace: "npm",
+        canonicalString,
+        formatted: `npm:${canonicalString}`,
+      };
+    }
+    throw new Error(`npmjs.com URL must include a package name: "${input}"`);
+  }
+
   if (host.includes(".")) {
     return {
       namespace: "dns",
@@ -136,6 +151,36 @@ export function parseUrl(input: string): ParsedUrl {
   }
 
   throw new Error(`Cannot determine namespace for "${input}"`);
+}
+
+/**
+ * Parse any free-form identifier string into namespace + canonicalString.
+ *
+ * Handles all of these forms:
+ *   github:org/repo          → namespace:value  (explicit prefix)
+ *   dns:example.com          → namespace:value
+ *   npm:package-name         → namespace:value
+ *   github.com/org/repo      → URL-style
+ *   https://github.com/...   → URL-style
+ *   www.example.com          → URL-style
+ */
+export function parseAnyIdentifier(input: string): {
+  namespace: string;
+  canonicalString: string;
+} {
+  const trimmed = input.trim();
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return parseUrl(trimmed);
+  }
+
+  // "namespace:value" — colon exists and nothing before it looks like a URL host
+  const colonIdx = trimmed.indexOf(":");
+  if (colonIdx > 0 && !/[./]/.test(trimmed.slice(0, colonIdx))) {
+    return parseIdentifier(trimmed);
+  }
+
+  return parseUrl(trimmed);
 }
 
 // ============================================================================

@@ -40,7 +40,7 @@ describe("identifier.get()", () => {
           namespace: "github",
           canonicalString: "org/repo",
           owner: "0x123",
-          escrowAddress: "0x456",
+          accountAddress: "0x456",
           claimedAt: 1000n,
           revokedAt: null,
           createdAt: 1000n,
@@ -85,8 +85,6 @@ describe("stats() REST method", () => {
       data: {
         totalIdentifiers: 10,
         totalOwners: 7,
-        totalWithdrawals: 3,
-        totalWithdrawnUSD: "1000",
       },
     };
 

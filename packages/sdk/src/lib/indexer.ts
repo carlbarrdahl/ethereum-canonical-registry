@@ -26,7 +26,7 @@ const identifiersQuery = gql`
         namespace
         canonicalString
         owner
-        escrowAddress
+        accountAddress
         claimedAt
         revokedAt
         createdAt
@@ -47,7 +47,7 @@ const identifierQuery = gql`
       namespace
       canonicalString
       owner
-      escrowAddress
+      accountAddress
       claimedAt
       revokedAt
       createdAt
@@ -85,73 +85,6 @@ const aliasesQuery = gql`
   }
 `;
 
-const withdrawalsQuery = gql`
-  query Withdrawals(
-    $where: withdrawalFilter
-    $orderBy: String
-    $orderDirection: String
-    $limit: Int
-    $after: String
-  ) {
-    withdrawals(
-      where: $where
-      orderBy: $orderBy
-      orderDirection: $orderDirection
-      limit: $limit
-      after: $after
-    ) {
-      items {
-        id
-        identifierId
-        token
-        to
-        amount
-        timestamp
-        txHash
-      }
-      totalCount
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-    }
-  }
-`;
-
-const warehouseBalancesQuery = gql`
-  query WarehouseBalances(
-    $where: warehouseBalanceFilter
-    $orderBy: String
-    $orderDirection: String
-    $limit: Int
-    $after: String
-  ) {
-    warehouseBalances(
-      where: $where
-      orderBy: $orderBy
-      orderDirection: $orderDirection
-      limit: $limit
-      after: $after
-    ) {
-      items {
-        id
-        user
-        token
-        balance
-        totalEarned
-        totalClaimed
-        totalEarnedUSD
-        lastUpdatedAt
-      }
-      totalCount
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-    }
-  }
-`;
-
 // ============================================================================
 // Types
 // ============================================================================
@@ -161,7 +94,7 @@ export type Identifier = {
   namespace: string;
   canonicalString: string;
   owner: Address | null;
-  escrowAddress: Address | null;
+  accountAddress: Address | null;
   claimedAt: bigint | null;
   revokedAt: bigint | null;
   createdAt: bigint;
@@ -172,27 +105,6 @@ export type IdentifierAlias = {
   aliasId: `0x${string}`;
   primaryId: `0x${string}`;
   linkedAt: bigint;
-};
-
-export type Withdrawal = {
-  id: string;
-  identifierId: `0x${string}`;
-  token: Address;
-  to: Address;
-  amount: string;
-  timestamp: bigint;
-  txHash: Address;
-};
-
-export type WarehouseBalance = {
-  id: string;
-  user: Address;
-  token: Address;
-  balance: string;
-  totalEarned: string;
-  totalClaimed: string;
-  totalEarnedUSD: string;
-  lastUpdatedAt: bigint;
 };
 
 export type Page<T> = {
@@ -214,27 +126,13 @@ export type IdentifierFilter = {
   namespace?: string;
   owner?: string;
   owner_in?: string[];
-  escrowAddress?: string;
+  accountAddress?: string;
 };
 
 export type AliasFilter = {
   aliasId?: string;
   primaryId?: string;
   primaryId_in?: string[];
-};
-
-export type WithdrawalFilter = {
-  identifierId?: string;
-  identifierId_in?: string[];
-  token?: string;
-  to?: string;
-};
-
-export type WarehouseBalanceFilter = {
-  user?: string;
-  user_in?: string[];
-  token?: string;
-  token_in?: string[];
 };
 
 export type QueryVariables<TFilter> = {
@@ -252,8 +150,6 @@ export type QueryVariables<TFilter> = {
 export type RegistryStats = {
   totalIdentifiers: number;
   totalOwners: number;
-  totalWithdrawals: number;
-  totalWithdrawnUSD: string;
 };
 
 export type StatsResponse = {
@@ -278,16 +174,6 @@ type IndexerBase = {
     query: (
       variables?: QueryVariables<AliasFilter>,
     ) => Promise<Page<IdentifierAlias> | null>;
-  };
-  withdrawal: {
-    query: (
-      variables?: QueryVariables<WithdrawalFilter>,
-    ) => Promise<Page<Withdrawal> | null>;
-  };
-  warehouseBalance: {
-    query: (
-      variables?: QueryVariables<WarehouseBalanceFilter>,
-    ) => Promise<Page<WarehouseBalance> | null>;
   };
   stats: () => Promise<RegistryStats>;
 };
@@ -342,24 +228,6 @@ export function createIndexer(chainId: SupportedChainId): Indexer {
           .query(aliasesQuery, variables)
           .toPromise();
         return result.data?.identifierAliases ?? null;
-      },
-    },
-
-    withdrawal: {
-      query: async (variables: QueryVariables<WithdrawalFilter> = {}) => {
-        const result = await client
-          .query(withdrawalsQuery, variables)
-          .toPromise();
-        return result.data?.withdrawals ?? null;
-      },
-    },
-
-    warehouseBalance: {
-      query: async (variables: QueryVariables<WarehouseBalanceFilter> = {}) => {
-        const result = await client
-          .query(warehouseBalancesQuery, variables)
-          .toPromise();
-        return result.data?.warehouseBalances ?? null;
       },
     },
 

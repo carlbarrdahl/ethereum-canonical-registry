@@ -7,7 +7,7 @@ import {
   zeroAddress,
 } from "viem";
 import { writeAndWait } from "./lib/tx";
-import { canonicalise, toId, resolveDepositAddress } from "./utils";
+import { canonicalise, toId, resolveDepositAddress, parseAnyIdentifier } from "./utils";
 
 export type IdentifierState = {
   id: `0x${string}`;
@@ -38,6 +38,58 @@ export function createRegistryMethods(
     });
   }
 
+  const erc20Abi = [
+    {
+      name: "balanceOf",
+      type: "function",
+      stateMutability: "view",
+      inputs: [{ name: "account", type: "address" }],
+      outputs: [{ name: "", type: "uint256" }],
+    },
+  ] as const;
+
+  async function resolveById(
+    namespace: string,
+    rawCanonicalString: string,
+    token?: Address,
+  ): Promise<IdentifierState> {
+    const cs = canonicalise(rawCanonicalString);
+    const id = toId(namespace, cs);
+
+    const depositAddress: Address = beaconProxyBytecode
+      ? resolveDepositAddress(id, registryAddress, beaconProxyBytecode)
+      : await (getContract({
+          address: registryAddress,
+          abi: registryAbi,
+          client: { public: publicClient },
+        }) as any).read.predictAddress([id]);
+
+    const registryContract = getContract({
+      address: registryAddress,
+      abi: registryAbi,
+      client: { public: publicClient },
+    });
+
+    const [ownerRaw, balance] = await Promise.all([
+      (registryContract as any).read.ownerOf([id]) as Promise<Address>,
+      token
+        ? publicClient.readContract({
+            address: token,
+            abi: erc20Abi,
+            functionName: "balanceOf",
+            args: [depositAddress],
+          })
+        : Promise.resolve(null),
+    ]);
+
+    return {
+      id,
+      depositAddress,
+      owner: ownerRaw === zeroAddress ? null : ownerRaw,
+      balance,
+    };
+  }
+
   return {
     /**
      * Get the registered owner of an identifier (resolves through aliases).
@@ -54,7 +106,7 @@ export function createRegistryMethods(
     },
 
     /**
-     * Get the deterministic escrow address for an identifier.
+     * Get the deterministic account address for an identifier.
      */
     predictAddress: async (id: `0x${string}`): Promise<Address> => {
       const contract = getContract({
@@ -131,14 +183,14 @@ export function createRegistryMethods(
     },
 
     /**
-     * Deploy the ClaimableEscrow proxy for an identifier (permissionless).
+     * Deploy the IdentityAccount proxy for an identifier (permissionless).
      */
-    deployEscrow: async (
+    deployAccount: async (
       id: `0x${string}`,
     ): Promise<{ hash: `0x${string}` }> => {
       if (!wallet) throw new Error("Wallet required");
       const contract = getRegistryContract();
-      const hash = await (contract as any).write.deployEscrow([id], {
+      const hash = await (contract as any).write.deployAccount([id], {
         account: wallet.account!,
       });
       return writeAndWait(wallet, hash);
@@ -168,12 +220,12 @@ export function createRegistryMethods(
     },
 
     /**
-     * Check whether the ClaimableEscrow for an identifier has been deployed.
+     * Check whether the IdentityAccount for an identifier has been deployed.
      * Returns false if the deposit address has no code (not yet deployed).
      * The registry deploys it automatically during claim(), but funders can
      * send tokens before it's deployed — the address is always the same.
      */
-    isEscrowDeployed: async (id: `0x${string}`): Promise<boolean> => {
+    isAccountDeployed: async (id: `0x${string}`): Promise<boolean> => {
       const contract = getContract({
         address: registryAddress,
         abi: registryAbi,
@@ -194,56 +246,28 @@ export function createRegistryMethods(
      * // state.owner          — null if unclaimed
      * // state.balance        — claimable token balance at the deposit address
      */
-    resolveIdentifier: async (
+    resolveIdentifier: (
       namespace: string,
       rawCanonicalString: string,
       token?: Address,
-    ): Promise<IdentifierState> => {
-      const cs = canonicalise(rawCanonicalString);
-      const id = toId(namespace, cs);
+    ): Promise<IdentifierState> => resolveById(namespace, rawCanonicalString, token),
 
-      const depositAddress: Address = beaconProxyBytecode
-        ? resolveDepositAddress(id, registryAddress, beaconProxyBytecode)
-        : await (getContract({
-            address: registryAddress,
-            abi: registryAbi,
-            client: { public: publicClient },
-          }) as any).read.predictAddress([id]);
-
-      const registryContract = getContract({
-        address: registryAddress,
-        abi: registryAbi,
-        client: { public: publicClient },
-      });
-
-      const erc20Abi = [
-        {
-          name: "balanceOf",
-          type: "function",
-          stateMutability: "view",
-          inputs: [{ name: "account", type: "address" }],
-          outputs: [{ name: "", type: "uint256" }],
-        },
-      ] as const;
-
-      const [ownerRaw, balance] = await Promise.all([
-        (registryContract as any).read.ownerOf([id]) as Promise<Address>,
-        token
-          ? publicClient.readContract({
-              address: token,
-              abi: erc20Abi,
-              functionName: "balanceOf",
-              args: [depositAddress],
-            })
-          : Promise.resolve(null),
-      ]);
-
-      return {
-        id,
-        depositAddress,
-        owner: ownerRaw === zeroAddress ? null : ownerRaw,
-        balance,
-      };
+    /**
+     * Resolve any free-form identifier string to its on-chain state.
+     * Accepts namespace:value, URLs, and domain names.
+     *
+     * @example
+     * sdk.registry.resolve("github:org/repo")
+     * sdk.registry.resolve("github.com/org/repo")
+     * sdk.registry.resolve("https://github.com/org/repo")
+     * sdk.registry.resolve("dns:example.com")
+     * sdk.registry.resolve("www.example.com")
+     * sdk.registry.resolve("npm:package-name")
+     * sdk.registry.resolve("npmjs.com/package/foo")
+     */
+    resolve: (input: string, token?: Address): Promise<IdentifierState> => {
+      const { namespace, canonicalString } = parseAnyIdentifier(input);
+      return resolveById(namespace, canonicalString, token);
     },
   };
 }

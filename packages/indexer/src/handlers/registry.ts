@@ -17,7 +17,7 @@ ponder.on("CanonicalRegistry:Claimed", async ({ event, context }) => {
       namespace,
       canonicalString,
       owner: owner.toLowerCase() as `0x${string}`,
-      escrowAddress: null,
+      accountAddress: null,
       claimedAt: event.block.timestamp,
       revokedAt: null,
       createdAt: event.block.timestamp,
@@ -78,13 +78,13 @@ ponder.on("CanonicalRegistry:Unlinked", async ({ event, context }) => {
 });
 
 /**
- * Handle EscrowDeployed event
- * - Update identifier with escrow address
- * - Create identifier row if not yet present (escrow can be deployed before claim)
+ * Handle AccountDeployed event
+ * - Update identifier with account address
+ * - Create identifier row if not yet present (account can be deployed before claim)
  */
-ponder.on("CanonicalRegistry:EscrowDeployed", async ({ event, context }) => {
+ponder.on("CanonicalRegistry:AccountDeployed", async ({ event, context }) => {
   const { db } = context;
-  const { id, escrow } = event.args;
+  const { id, account } = event.args;
 
   await db
     .insert(identifier)
@@ -93,12 +93,12 @@ ponder.on("CanonicalRegistry:EscrowDeployed", async ({ event, context }) => {
       namespace: "",
       canonicalString: "",
       owner: null,
-      escrowAddress: escrow.toLowerCase() as `0x${string}`,
+      accountAddress: account.toLowerCase() as `0x${string}`,
       claimedAt: null,
       revokedAt: null,
       createdAt: event.block.timestamp,
     })
     .onConflictDoUpdate(() => ({
-      escrowAddress: escrow.toLowerCase() as `0x${string}`,
+      accountAddress: account.toLowerCase() as `0x${string}`,
     }));
 });

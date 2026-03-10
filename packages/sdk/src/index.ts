@@ -11,8 +11,7 @@ import { config, type SupportedChainId } from "./config";
 import deployments from "@ethereum-canonical-registry/contracts/deployments.json";
 
 import { createRegistryMethods } from "./registry";
-import { createEscrowMethods } from "./escrow";
-import { createWarehouseMethods } from "./warehouse";
+import { createAccountMethods } from "./account";
 
 export * from "./lib/tx";
 export * from "./components/provider";
@@ -52,8 +51,7 @@ export class CanonicalRegistrySDK {
   #indexer: Indexer;
 
   registry!: ReturnType<typeof createRegistryMethods>;
-  escrow!: ReturnType<typeof createEscrowMethods>;
-  warehouse!: ReturnType<typeof createWarehouseMethods>;
+  account!: ReturnType<typeof createAccountMethods>;
 
   constructor(wallet?: WalletClient, defaultChain?: SupportedChainId) {
     const chainId = (wallet?.chain?.id ??
@@ -78,13 +76,7 @@ export class CanonicalRegistrySDK {
         beaconProxyBytecode: deployments.beaconProxyBytecode,
       },
     );
-    this.escrow = createEscrowMethods(wallet, this.#public, this.#deployments);
-    this.warehouse = createWarehouseMethods(
-      wallet,
-      this.#public,
-      chainId,
-      this.#deployments,
-    );
+    this.account = createAccountMethods(wallet, this.#public, this.#deployments);
   }
 
   get wallet(): WalletClient | undefined {

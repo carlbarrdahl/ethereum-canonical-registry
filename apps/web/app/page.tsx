@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   AlertCircle,
   ArrowDownToLine,
+  WarehouseIcon,
 } from "lucide-react";
 
 import {
@@ -348,9 +349,9 @@ export default function Page() {
             </form>
           </div>
 
-          {/* Withdraw row — only shown when identifier is claimed */}
-          {state?.owner && (
-            <WithdrawRow
+          {/* Owner actions — only when the connected wallet is the owner */}
+          {state?.owner && account && state.owner.toLowerCase() === account.toLowerCase() && (
+            <ExecuteActions
               state={state}
               token={selectedToken!}
             />
@@ -361,8 +362,8 @@ export default function Page() {
   );
 }
 
-// ─── Withdraw row ─────────────────────────────────────────────────────────────
-function WithdrawRow({
+// ─── Execute actions ──────────────────────────────────────────────────────────
+function ExecuteActions({
   state,
   token,
 }: {
@@ -370,41 +371,115 @@ function WithdrawRow({
   token: Address;
 }) {
   const { sdk } = useCanonicalRegistrySDK();
-  const [isPending, setIsPending] = useState(false);
+  const { address: account } = useAccount();
+  const [pending, setPending] = useState<string | null>(null);
 
-  async function handleWithdraw() {
-    if (!sdk) return;
-    setIsPending(true);
+  const withdrawForm = useForm<{ recipient: string }>();
+  const warehouseForm = useForm<{ warehouseAddress: string }>();
+
+  async function handleWithdrawTokens({ recipient }: { recipient: string }) {
+    if (!sdk || !state.balance || state.balance === 0n) return;
+    setPending("withdraw");
     try {
-      await sdk.escrow.withdraw(state.depositAddress, token);
-      toast.success("Withdrawn to owner");
+      const to = (recipient.trim() || account!) as Address;
+      const { target, data } = sdk.account.encodeERC20Transfer(token, to, state.balance);
+      await sdk.account.execute(state.depositAddress, target, data);
+      toast.success("Tokens withdrawn");
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
-      setIsPending(false);
+      setPending(null);
+    }
+  }
+
+  async function handleWarehouseWithdraw({ warehouseAddress }: { warehouseAddress: string }) {
+    if (!sdk || !warehouseAddress.trim()) return;
+    setPending("warehouse");
+    try {
+      const { target, data } = sdk.account.encodeWarehouseWithdraw(
+        warehouseAddress.trim() as Address,
+        state.depositAddress,
+        token,
+      );
+      await sdk.account.execute(state.depositAddress, target, data);
+      toast.success("Warehouse withdrawal complete");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setPending(null);
     }
   }
 
   return (
-    <div className="px-5 py-4 flex items-center justify-between gap-4">
-      <div className="space-y-0.5 min-w-0">
-        <p className="text-xs uppercase tracking-wider font-medium text-muted-foreground">
-          Withdraw
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Send balance to registered owner — permissionless, anyone can call.
-        </p>
-      </div>
-      <Button
-        variant="outline"
-        size="sm"
-        isLoading={isPending}
-        onClick={handleWithdraw}
-        className="shrink-0"
+    <div className="px-5 py-4 space-y-5">
+      <p className="text-xs uppercase tracking-wider font-medium text-muted-foreground">
+        Owner Actions
+      </p>
+
+      {/* Withdraw ERC-20 balance */}
+      <form
+        onSubmit={withdrawForm.handleSubmit(handleWithdrawTokens)}
+        className="space-y-2"
       >
-        <ArrowDownToLine className="w-3.5 h-3.5 mr-1.5" />
-        Withdraw to owner
-      </Button>
+        <div className="flex gap-2 items-start">
+          <div className="flex-1 space-y-1">
+            <Input
+              {...withdrawForm.register("recipient")}
+              placeholder={`Recipient (default: your wallet)`}
+              className="font-mono text-sm"
+            />
+          </div>
+          <Button
+            type="submit"
+            variant="outline"
+            size="sm"
+            className="shrink-0"
+            disabled={!state.balance || state.balance === 0n || pending !== null}
+            isLoading={pending === "withdraw"}
+          >
+            <ArrowDownToLine className="w-3.5 h-3.5 mr-1.5" />
+            Withdraw tokens
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Transfer the full token balance from this identity account to a recipient.
+        </p>
+      </form>
+
+      {/* Warehouse withdraw */}
+      <form
+        onSubmit={warehouseForm.handleSubmit(handleWarehouseWithdraw)}
+        className="space-y-2"
+      >
+        <div className="flex gap-2 items-start">
+          <div className="flex-1 space-y-1">
+            <Input
+              {...warehouseForm.register("warehouseAddress", { required: "Warehouse address required" })}
+              placeholder="Splits Warehouse address"
+              className="font-mono text-sm"
+            />
+            {warehouseForm.formState.errors.warehouseAddress && (
+              <p className="text-xs text-destructive">
+                {warehouseForm.formState.errors.warehouseAddress.message}
+              </p>
+            )}
+          </div>
+          <Button
+            type="submit"
+            variant="outline"
+            size="sm"
+            className="shrink-0"
+            disabled={pending !== null}
+            isLoading={pending === "warehouse"}
+          >
+            <WarehouseIcon className="w-3.5 h-3.5 mr-1.5" />
+            Warehouse withdraw
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Pull tokens owed to this identity account from a Splits Warehouse.
+        </p>
+      </form>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { db } from "ponder:api";
 import schema from "ponder:schema";
 import { desc, eq, sql, graphql } from "ponder";
-import { identifier, withdrawal } from "ponder:schema";
+import { identifier } from "ponder:schema";
 
 const app = new Hono();
 
@@ -16,10 +16,6 @@ const app = new Hono();
 //   identifiers(where: { owner: "0x..." }, orderBy: "createdAt", orderDirection: "desc")
 //   identifierAlias(id: "...")
 //   identifierAliases(where: { primaryId: "0x..." })
-//   withdrawal(id: "...")
-//   withdrawals(where: { identifierId: "0x..." })
-//   warehouseBalance(id: "...")
-//   warehouseBalances(where: { user: "0x..." })
 
 app.use("/graphql", graphql({ db, schema }));
 
@@ -32,25 +28,19 @@ app.use("/graphql", graphql({ db, schema }));
  * Global registry statistics.
  */
 app.get("/api/stats", async (c) => {
-  const [identifiersResult, ownersResult, withdrawalsResult, withdrawnResult] =
+  const [identifiersResult, ownersResult] =
     await Promise.all([
       db.select({ count: sql<number>`count(*)` }).from(identifier),
       db
         .select({ count: sql<number>`count(distinct ${identifier.owner})` })
         .from(identifier)
         .where(sql`${identifier.owner} is not null`),
-      db.select({ count: sql<number>`count(*)` }).from(withdrawal),
-      db
-        .select({ total: sql<bigint>`sum(${withdrawal.amount})` })
-        .from(withdrawal),
     ]);
 
   return c.json({
     data: {
       totalIdentifiers: identifiersResult[0]?.count ?? 0,
       totalOwners: ownersResult[0]?.count ?? 0,
-      totalWithdrawals: withdrawalsResult[0]?.count ?? 0,
-      totalWithdrawnUSD: (withdrawnResult[0]?.total ?? 0n).toString(),
     },
   });
 });

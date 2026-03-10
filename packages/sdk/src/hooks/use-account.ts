@@ -6,11 +6,11 @@ import { toast } from "sonner";
 import type { Address } from "viem";
 import { useInvalidate } from "./utils";
 
-export function useWithdraw(
+export function useExecute(
   opts?: UseMutationOptions<
     { hash: `0x${string}` },
     Error,
-    { escrowAddress: Address; token: Address }
+    { accountAddress: Address; target: Address; data: `0x${string}`; value?: bigint }
   >,
 ) {
   const { sdk } = useCanonicalRegistrySDK();
@@ -18,26 +18,26 @@ export function useWithdraw(
 
   return useMutation({
     mutationFn: async ({
-      escrowAddress,
-      token,
+      accountAddress,
+      target,
+      data,
+      value,
     }: {
-      escrowAddress: Address;
-      token: Address;
+      accountAddress: Address;
+      target: Address;
+      data: `0x${string}`;
+      value?: bigint;
     }) => {
       if (!sdk) throw new Error("SDK not initialized");
-      return sdk.escrow.withdraw(escrowAddress, token);
+      return sdk.account.execute(accountAddress, target, data, value);
     },
     onSuccess: (data, variables, ...args) => {
-      toast.success("Withdrawal successful");
-      invalidate([
-        ["escrowWithdrawals"],
-        ["warehouseBalance"],
-        ["warehouseBalances"],
-      ]);
+      toast.success("Transaction executed");
+      invalidate([["identifiers"], ["identifier"]]);
       opts?.onSuccess?.(data, variables, ...args);
     },
     onError: (error, ...args) => {
-      toast.error(error.message || "Failed to withdraw from escrow");
+      toast.error(error.message || "Failed to execute transaction");
       opts?.onError?.(error, ...args);
     },
     ...opts,

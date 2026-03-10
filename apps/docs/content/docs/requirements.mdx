@@ -30,7 +30,7 @@ Structured requirements using [EARS notation](https://alistairmavin.com/ears/) (
 
 **CR-ADDR-02** The registry shall compute deposit addresses via CREATE2 using the identifier as the salt and the BeaconProxy initcode as the creation code.
 
-**CR-ADDR-03** The deposit address shall be stable across escrow implementation upgrades. Only the delegated logic shall change; the proxy address shall remain fixed.
+**CR-ADDR-03** The deposit address shall be stable across identity account implementation upgrades. Only the delegated logic shall change; the proxy address shall remain fixed.
 
 ---
 
@@ -48,27 +48,25 @@ Structured requirements using [EARS notation](https://alistairmavin.com/ears/) (
 
 ---
 
-## 4. Escrow Deployment
+## 4. Identity Account Deployment
 
-**CR-ESCROW-01** When an identifier's escrow has not yet been deployed, any caller may deploy it by calling `deployEscrow(id)`.
+**CR-ACCT-01** When an identifier's identity account has not yet been deployed, any caller may deploy it by calling `deployAccount(id)`.
 
-**CR-ESCROW-02** If the escrow for an identifier has already been deployed, then `deployEscrow` shall revert.
+**CR-ACCT-02** If the identity account for an identifier has already been deployed, then `deployAccount` shall revert.
 
-**CR-ESCROW-03** The registry shall deploy each escrow as a `BeaconProxy` pointing to the `UpgradeableBeacon` owned by the registry.
+**CR-ACCT-03** The registry shall deploy each identity account as a `BeaconProxy` pointing to the `UpgradeableBeacon` owned by the registry.
 
 ---
 
-## 5. Escrow Withdrawals
+## 5. Identity Account Execution
 
-**CR-WITH-01** When `withdraw(token)` is called on a `ClaimableEscrow`, the escrow shall transfer all `token` balance to the current registered owner of its identifier.
+**CR-EXEC-01** When `execute(target, data, value)` is called on an `IdentityAccount`, the account shall forward the call to `target` with the given `data` and `value`.
 
-**CR-WITH-02** If the identifier is not yet claimed, then `withdraw` shall revert.
+**CR-EXEC-02** If `msg.sender` is not the registered owner of the account's identifier (`registry.ownerOf(id)`), then `execute` shall revert.
 
-**CR-WITH-03** If the total balance of `token` (after pulling from the Splits Warehouse) is zero, then `withdraw` shall revert.
+**CR-EXEC-03** If the forwarded call to `target` reverts, then `execute` shall revert.
 
-**CR-WITH-04** When the escrow has a non-trivial Splits Warehouse internal balance for `token`, the escrow shall call `warehouse.withdraw` before transferring to the owner.
-
-**CR-WITH-05** The registry shall allow anyone to call `withdraw` — the caller need not be the owner.
+**CR-EXEC-04** The identity account shall accept native ETH deposits via `receive()`.
 
 ---
 
@@ -110,13 +108,13 @@ Structured requirements using [EARS notation](https://alistairmavin.com/ears/) (
 
 ---
 
-## 9. Escrow Upgradeability
+## 9. Account Upgradeability
 
-**CR-UPG-01** The registry shall own an `UpgradeableBeacon` to which all `ClaimableEscrow` proxies delegate.
+**CR-UPG-01** The registry shall own an `UpgradeableBeacon` to which all `IdentityAccount` proxies delegate.
 
-**CR-UPG-02** Only the registry owner shall be able to upgrade the escrow implementation via `upgradeEscrowImplementation(newImpl)`.
+**CR-UPG-02** Only the registry owner shall be able to upgrade the account implementation via `upgradeAccountImplementation(newImpl)`.
 
-**CR-UPG-03** After an upgrade, all existing escrow proxy addresses shall remain unchanged.
+**CR-UPG-03** After an upgrade, all existing identity account proxy addresses shall remain unchanged.
 
 ---
 
@@ -138,13 +136,9 @@ Structured requirements using [EARS notation](https://alistairmavin.com/ears/) (
 
 **REQ-I4** When `Unlinked` is emitted, the Indexer shall delete the corresponding `identifier_alias` record.
 
-**REQ-I5** When `EscrowDeployed` is emitted, the Indexer shall update the identifier record with `escrowAddress`.
+**REQ-I5** When `AccountDeployed` is emitted, the Indexer shall update the identifier record with `accountAddress`.
 
-**REQ-I6** When `Withdrawn` is emitted on a `ClaimableEscrow`, the Indexer shall insert a `withdrawal` record and link it to its identifier via `escrowAddress`.
-
-**REQ-I7** The Indexer shall use Ponder's factory pattern to automatically discover and index new `ClaimableEscrow` proxies as they are deployed from the registry.
-
-**REQ-I8** The Indexer shall expose `GET /api/stats`, `GET /api/identifiers/:namespace`, and `GET /api/owner/:address/identifiers`.
+**REQ-I6** The Indexer shall expose `GET /api/stats`, `GET /api/identifiers/:namespace`, and `GET /api/owner/:address/identifiers`.
 
 ---
 
@@ -154,17 +148,17 @@ Structured requirements using [EARS notation](https://alistairmavin.com/ears/) (
 
 **REQ-SDK2** The SDK shall provide pure, RPC-free utilities: `toId(namespace, canonicalString)`, `canonicalise(value)`, `parseUrl(input)`, `formatIdentifier(namespace, canonicalString)`, and `parseIdentifier(identifier)`.
 
-**REQ-SDK3** The SDK shall provide `registry.ownerOf(id)`, `registry.predictAddress(id)`, `registry.claim(namespace, canonicalString, proof)`, `registry.revoke(namespace, canonicalString)`, `registry.linkIds(primaryId, aliasIds)`, `registry.unlinkIds(primaryId, aliasIds)`, `registry.deployEscrow(id)`, `registry.isEscrowDeployed(id)`, `registry.resolveIdentifier(namespace, canonicalString, token?)`, and `registry.setVerifier(namespace, verifier)`.
+**REQ-SDK3** The SDK shall provide `registry.ownerOf(id)`, `registry.predictAddress(id)`, `registry.claim(namespace, canonicalString, proof)`, `registry.revoke(namespace, canonicalString)`, `registry.linkIds(primaryId, aliasIds)`, `registry.unlinkIds(primaryId, aliasIds)`, `registry.deployAccount(id)`, `registry.isAccountDeployed(id)`, `registry.resolveIdentifier(namespace, canonicalString, token?)`, and `registry.setVerifier(namespace, verifier)`.
 
-**REQ-SDK4** The SDK shall provide `escrow.withdraw(escrowAddress, token)`.
+**REQ-SDK4** The SDK shall provide `account.execute(accountAddress, target, data, value?)` for executing arbitrary calls through an identity account.
 
-**REQ-SDK5** The SDK shall provide `warehouse.withdraw(owner, token)` and `warehouse.balanceOf(owner, token)`.
+**REQ-SDK5** The SDK shall provide calldata encoding helpers: `account.encodeERC20Transfer(token, to, amount)`, `account.encodeWarehouseWithdraw(warehouse, owner, token)`, and `account.encodeERC721Transfer(nft, from, to, tokenId)`.
 
 **REQ-SDK6** The SDK shall provide a `CanonicalRegistryProvider` React context and `useCanonicalRegistrySDK()` hook.
 
-**REQ-SDK7** The SDK shall provide React query hooks: `useIdentifier`, `useIdentifiers`, `useAliases`, `useEscrowWithdrawals`, `useRegistryStats`, `useWarehouseBalance`, `useWarehouseBalances`.
+**REQ-SDK7** The SDK shall provide React query hooks: `useIdentifier`, `useIdentifiers`, `useAliases`, `useRegistryStats`.
 
-**REQ-SDK8** The SDK shall provide React mutation hooks: `useClaim`, `useRevoke`, `useLinkIds`, `useUnlinkIds`, `useDeployEscrow`, `useWithdraw`, `useWithdrawFromWarehouse`.
+**REQ-SDK8** The SDK shall provide React mutation hooks: `useClaim`, `useRevoke`, `useLinkIds`, `useUnlinkIds`, `useDeployAccount`, `useExecute`.
 
 **REQ-SDK9** When a mutation hook succeeds, the SDK shall invalidate related query keys after a delay to allow indexer processing.
 
@@ -172,10 +166,8 @@ Structured requirements using [EARS notation](https://alistairmavin.com/ears/) (
 
 ## 13. Data Model
 
-**REQ-DM1** The Indexer shall maintain the following entities: `identifier`, `identifier_alias`, `withdrawal`, `warehouse_balance`.
+**REQ-DM1** The Indexer shall maintain the following entities: `identifier`, `identifier_alias`.
 
-**REQ-DM2** The `identifier` entity shall include: `id` (bytes32), `namespace`, `canonicalString`, `owner` (nullable), `escrowAddress` (nullable), `claimedAt` (nullable), `revokedAt` (nullable), `createdAt`.
+**REQ-DM2** The `identifier` entity shall include: `id` (bytes32), `namespace`, `canonicalString`, `owner` (nullable), `accountAddress` (nullable), `claimedAt` (nullable), `revokedAt` (nullable), `createdAt`.
 
 **REQ-DM3** The `identifier_alias` entity shall include: `id`, `aliasId`, `primaryId`, `linkedAt`.
-
-**REQ-DM4** The `withdrawal` entity shall include: `id`, `identifierId`, `token`, `to`, `amount`, `timestamp`, `blockNumber`, `txHash`.

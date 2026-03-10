@@ -46,18 +46,18 @@ DnsVerifier    GitHubVerifier
 
 All oracle proofs use EIP-712 typed data signatures. The domain separator includes:
 
-| Field | Purpose |
-|---|---|
+| Field              | Purpose                          |
+| ------------------ | -------------------------------- |
 | `registry` address | Prevents cross-deployment replay |
-| `chainId` | Prevents cross-chain replay |
+| `chainId`          | Prevents cross-chain replay      |
 
 Each proof also includes:
 
-| Field | Purpose |
-|---|---|
-| `id` | Binds to a specific identifier |
+| Field      | Purpose                                                             |
+| ---------- | ------------------------------------------------------------------- |
+| `id`       | Binds to a specific identifier                                      |
 | `claimant` | Binds to a specific wallet — proof cannot be used by another sender |
-| `expiry` | Time-limited (default 1 hour) — prevents indefinite replay |
+| `expiry`   | Time-limited (default 1 hour) — prevents indefinite replay          |
 
 ### GitHub Verifier
 

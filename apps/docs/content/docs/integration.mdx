@@ -12,15 +12,18 @@ The registry serves different roles depending on who you are. This page covers i
 You don't need to know the registry exists. Compute the deposit address for any identifier and transfer tokens directly to it — before or after the identifier is claimed.
 
 ```ts
-import { CanonicalRegistrySDK } from "@ethereum-canonical-registry/sdk";
+import { CanonicalRegistrySDK } from '@ethereum-canonical-registry/sdk';
 
 const sdk = new CanonicalRegistrySDK();
-const { depositAddress } = await sdk.registry.resolveIdentifier("github", "org/repo");
+const { depositAddress } = await sdk.registry.resolveIdentifier(
+  'github',
+  'org/repo',
+);
 
 await token.transfer(depositAddress, amount);
 ```
 
-Funds accumulate at the deposit address until the identifier's owner claims and withdraws them.
+Funds accumulate at the deposit address until the identifier's owner claims and executes a transfer.
 
 ## As an On-Chain Consumer
 
@@ -36,7 +39,7 @@ if (owner != address(0)) {
     // Identifier is claimed — send directly to owner
     token.transfer(owner, amount);
 } else {
-    // Identifier is unclaimed — send to deposit address for later withdrawal
+    // Identifier is unclaimed — send to deposit address for later retrieval
     token.transfer(depositAddress, amount);
 }
 ```
@@ -47,47 +50,51 @@ if (owner != address(0)) {
 
 For protocols building allocation systems — grant programs, funding distributions, dependency tooling — the recommended flow at allocation creation time:
 
-- **If claimed:** use the registrant address directly as the allocation recipient. Funds flow to the registrant's warehouse balance and are withdrawn normally.
-- **If unclaimed:** use the deposit address as the allocation recipient. Funds accumulate in the escrow until the identifier is claimed, at which point the registrant calls `withdraw`.
+- **If claimed:** use the registrant address directly as the allocation recipient.
+- **If unclaimed:** use the deposit address as the allocation recipient. Funds accumulate in the identity account until the identifier is claimed, at which point the owner can execute transfers.
 
 The resolved address is stored as a plain Ethereum address in the upstream protocol. No knowledge of the registry is required at distribution time.
 
 ```ts
-const state = await sdk.registry.resolveIdentifier("github", "org/repo", tokenAddress);
+const state = await sdk.registry.resolveIdentifier(
+  'github',
+  'org/repo',
+  tokenAddress,
+);
 
 const recipient = state.owner ?? state.depositAddress;
 ```
 
-## As a Registrant (Claiming and Withdrawing)
+## As a Registrant (Claiming and Executing)
 
 1. **Generate a proof** via the web API for your namespace (GitHub OAuth or DNS TXT record).
-2. **Claim** — submits the proof on-chain and deploys the escrow proxy:
+2. **Claim** — submits the proof on-chain and deploys the identity account:
 
 ```ts
-await sdk.registry.claim("github", "org/repo", proof);
+await sdk.registry.claim('github', 'org/repo', proof);
 ```
 
-3. **Withdraw** — pulls all accumulated funds from the escrow to your address:
+3. **Execute** — interact with your identity account using `execute`. The SDK provides helpers for common operations:
 
 ```ts
-await sdk.escrow.withdraw(depositAddress, tokenAddress);
+// Transfer ERC-20 tokens to your wallet
+const { target, data } = sdk.account.encodeERC20Transfer(
+  tokenAddress,
+  myWallet,
+  amount,
+);
+await sdk.account.execute(depositAddress, target, data);
+
+// Withdraw from a Splits Warehouse
+const call = sdk.account.encodeWarehouseWithdraw(
+  warehouseAddress,
+  depositAddress,
+  tokenAddress,
+);
+await sdk.account.execute(depositAddress, call.target, call.data);
 ```
 
-Anyone can trigger `withdraw` — funds always go to the registered owner, not the caller. This means a frontend or keeper can sweep on the owner's behalf.
-
-## Splits Warehouse
-
-Any protocol that routes funds via Splits Warehouse can use deposit addresses as allocation recipients. The deposit address is a normal Ethereum address — pass it to `warehouse.batchDeposit` as you would any other recipient.
-
-```
-Funder → warehouse.batchDeposit([depositAddress, ...], token, amounts)
-           → escrow accumulates warehouse balance
-           → owner claims registry identifier
-           → escrow.withdraw(token)
-               pulls warehouse balance + any direct transfers → owner
-```
-
-The deposit address is computable before the identifier is claimed, so protocols can allocate funds to unclaimed identifiers — funds accumulate in the warehouse and become withdrawable the moment the owner claims.
+Only the registered owner can call `execute` — the identity account verifies ownership through the registry.
 
 ## Adding a New Namespace
 
