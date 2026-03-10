@@ -64,7 +64,7 @@ const recipient = state.owner ?? state.depositAddress;
 2. **Claim** — submits the proof on-chain and deploys the identity account:
 
 ```ts
-await sdk.registry.claim('github', 'org/repo', proof);
+await sdk.registry.claim("github.com/org/repo", proof);
 ```
 
 3. **Execute** — interact with your identity account using `execute`. The SDK provides helpers for common operations:

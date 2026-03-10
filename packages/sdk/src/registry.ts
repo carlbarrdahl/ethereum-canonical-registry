@@ -119,13 +119,18 @@ export function createRegistryMethods(
 
     /**
      * Claim ownership of an identifier with an oracle proof.
+     *
+     * @example
+     * sdk.registry.claim("github.com/org/repo", proof)
+     * sdk.registry.claim("example.com", proof)
+     * sdk.registry.claim("github:org/repo", proof)
      */
     claim: async (
-      namespace: string,
-      canonicalString: string,
+      input: string,
       proof: `0x${string}`,
     ): Promise<{ hash: `0x${string}` }> => {
       if (!wallet) throw new Error("Wallet required");
+      const { namespace, canonicalString } = parseAnyIdentifier(input);
       const contract = getRegistryContract();
       const hash = await (contract as any).write.claim(
         [namespace, canonicalString, proof],
@@ -136,12 +141,16 @@ export function createRegistryMethods(
 
     /**
      * Revoke ownership of an identifier.
+     *
+     * @example
+     * sdk.registry.revoke("github.com/org/repo")
+     * sdk.registry.revoke("example.com")
      */
     revoke: async (
-      namespace: string,
-      canonicalString: string,
+      input: string,
     ): Promise<{ hash: `0x${string}` }> => {
       if (!wallet) throw new Error("Wallet required");
+      const { namespace, canonicalString } = parseAnyIdentifier(input);
       const contract = getRegistryContract();
       const hash = await (contract as any).write.revoke(
         [namespace, canonicalString],

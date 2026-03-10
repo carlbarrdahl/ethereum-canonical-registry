@@ -78,7 +78,7 @@ await tokenContract.transfer(state.depositAddress, amount);
 
 ```typescript
 // 1. Claim with a proof from the oracle signing service
-await sdk.registry.claim('github', 'org/repo', proofBytes);
+await sdk.registry.claim("github.com/org/repo", proofBytes);
 
 // 2. Transfer tokens out of the identity account
 const { target, data } = sdk.account.encodeERC20Transfer(

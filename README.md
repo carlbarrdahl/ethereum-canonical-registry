@@ -62,7 +62,7 @@ window.location.href = `/claim/github?owner=org&repo=repo&claimant=${address}`;
 const proof = new URLSearchParams(window.location.search).get("proof");
 
 // 3. Submit the claim on-chain
-await sdk.registry.claim("github", "org/repo", proof);
+await sdk.registry.claim("github.com/org/repo", proof);
 ```
 
 ### DNS
@@ -79,7 +79,7 @@ const res = await fetch("/api/proof/dns", {
 const { proof } = await res.json();
 
 // 3. Submit the claim on-chain
-await sdk.registry.claim("dns", "example.com", proof);
+await sdk.registry.claim("example.com", proof);
 ```
 
 ## Execute Actions

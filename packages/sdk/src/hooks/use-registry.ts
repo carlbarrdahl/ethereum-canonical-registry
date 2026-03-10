@@ -73,7 +73,7 @@ export function useClaim(
   opts?: UseMutationOptions<
     { hash: `0x${string}` },
     Error,
-    { namespace: string; canonicalString: string; proof: `0x${string}` }
+    { input: string; proof: `0x${string}` }
   >,
 ) {
   const { sdk } = useCanonicalRegistrySDK();
@@ -81,16 +81,14 @@ export function useClaim(
 
   return useMutation({
     mutationFn: async ({
-      namespace,
-      canonicalString,
+      input,
       proof,
     }: {
-      namespace: string;
-      canonicalString: string;
+      input: string;
       proof: `0x${string}`;
     }) => {
       if (!sdk) throw new Error("SDK not initialized");
-      return sdk.registry.claim(namespace, canonicalString, proof);
+      return sdk.registry.claim(input, proof);
     },
     onSuccess: (data, variables, ...args) => {
       toast.success("Identifier claimed successfully");
@@ -113,22 +111,16 @@ export function useRevoke(
   opts?: UseMutationOptions<
     { hash: `0x${string}` },
     Error,
-    { namespace: string; canonicalString: string }
+    { input: string }
   >,
 ) {
   const { sdk } = useCanonicalRegistrySDK();
   const invalidate = useInvalidate();
 
   return useMutation({
-    mutationFn: async ({
-      namespace,
-      canonicalString,
-    }: {
-      namespace: string;
-      canonicalString: string;
-    }) => {
+    mutationFn: async ({ input }: { input: string }) => {
       if (!sdk) throw new Error("SDK not initialized");
-      return sdk.registry.revoke(namespace, canonicalString);
+      return sdk.registry.revoke(input);
     },
     onSuccess: (data, variables, ...args) => {
       toast.success("Identifier revoked");

@@ -96,8 +96,7 @@ function ProofResult({
         size="sm"
         onClick={() =>
           claim.mutate({
-            namespace,
-            canonicalString,
+            input: `${namespace}:${canonicalString}`,
             proof: proof as `0x${string}`,
           })
         }
