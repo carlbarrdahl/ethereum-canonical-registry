@@ -13,7 +13,6 @@ Solidity smart contracts for the Canonical Registry.
 | **VerifierOracle** | Abstract base: EIP-712 typed-data proof verification against a trusted signer. |
 | **VerifierGitHub** | Extends `VerifierOracle`. Oracle confirms GitHub repo admin access via OAuth. |
 | **VerifierDns** | Extends `VerifierOracle`. Oracle confirms domain ownership via DNS TXT record. |
-| **SplitsWarehouse** | Bundled copy of the 0xSplits ERC-6909 vault (used locally; on testnet/mainnet the existing deployment is referenced). |
 | **TestToken** | Minimal ERC-20 for local development only. |
 
 ## Source layout
@@ -28,14 +27,14 @@ contracts/
     VerifierOracle.sol      — EIP-712 oracle base
     VerifierGitHub.sol      — GitHub verifier
     VerifierDns.sol         — DNS verifier
-  splits/                   — bundled 0xSplits contracts (local dev)
+  splits/                   — bundled 0xSplits contracts (not used by core; may be removed)
   mock/
     TestToken.sol           — ERC-20 test token
     Multicall3.sol          — local Multicall3 mock
 ignition/
   modules/
     Registry.ts             — local dev (deploys everything)
-    Registry.sepolia.ts     — Sepolia (uses external SplitsWarehouse + test tokens)
+    Registry.sepolia.ts     — Sepolia (with test tokens)
     Registry.production.ts  — mainnet/production (no test tokens)
     TestTokens.ts           — test token sub-module
   parameters/
@@ -62,7 +61,7 @@ pnpm hardhat node
 pnpm hardhat ignition deploy ignition/modules/Registry.ts --network localhost
 ```
 
-The local module deploys: `SplitsWarehouse`, `IdentityAccount` (implementation), `CanonicalRegistry`, `DnsVerifier`, `GitHubVerifier`, and test tokens (USDC, WETH, DAI). The deployer account is set as both `admin` and `trustedSigner`.
+The local module deploys: `IdentityAccount` (implementation), `CanonicalRegistry`, `DnsVerifier`, `GitHubVerifier`, and test tokens (USDC, WETH, DAI). The deployer account is set as both `admin` and `trustedSigner`.
 
 ### Generate deployments.json
 
@@ -95,7 +94,6 @@ Edit `ignition/parameters/sepolia.json` with your addresses:
 ```json
 {
   "DeployModuleSepolia": {
-    "splitsWarehouse": "0x8fb66F38cF86A3d5e8768f8F1754A24A6c661Fb8",
     "admin": "0xYourAdminAddress",
     "trustedSigner": "0xYourOracleSignerAddress"
   }
@@ -110,7 +108,7 @@ pnpm hardhat ignition deploy ignition/modules/Registry.sepolia.ts \
   --parameters ignition/parameters/sepolia.json
 ```
 
-Deploys `IdentityAccount` (impl), `CanonicalRegistry`, `DnsVerifier`, `GitHubVerifier`, and test tokens. References the existing SplitsWarehouse.
+Deploys `IdentityAccount` (impl), `CanonicalRegistry`, `DnsVerifier`, `GitHubVerifier`, and test tokens.
 
 For mainnet (no test tokens):
 
@@ -140,11 +138,6 @@ pnpm hardhat verify --network sepolia <ADDRESS> <CONSTRUCTOR_ARGS>
 | Sepolia | `Registry.sepolia.ts` | `ignition/parameters/sepolia.json` |
 | Mainnet | `Registry.production.ts` | `ignition/parameters/mainnet.json` |
 
-**Shared external contracts**
-
-| Contract | Address |
-|---|---|
-| SplitsWarehouse (Sepolia & mainnet) | `0x8fb66F38cF86A3d5e8768f8F1754A24A6c661Fb8` |
 
 ## Troubleshooting
 
