@@ -1,51 +1,80 @@
-# Curator Contracts
+# @ethereum-canonical-registry/contracts
 
-Smart contracts for the Curator platform: strategy-based token distribution on Ethereum with 0xSplits integration.
+Solidity smart contracts for the Canonical Registry.
 
-## Architecture
+## Contracts
 
-- **Strategy** – Core contract for weighted token distribution; deployed as minimal proxies (clones) via the factory.
-- **StrategyFactory** – Deploys new Strategy instances and holds the implementation. Uses the official SplitsWarehouse.
-- **SplitsWarehouse** – 0xSplits integration for unified withdrawals (use existing deployment on testnet/mainnet).
-- **ForeverSubnameRegistrar** – ENS subdomain registration (e.g. `strategy.support.eth`).
-- **Multicall3** – Batches multiple contract calls into a single transaction (official deployment on mainnet/sepolia, mock for local dev). Note: Not used for ENS registration due to `msg.sender` authorization requirements.
-- **TestToken** – ERC20 test tokens for local development only.
+| Contract | Purpose |
+|---|---|
+| **CanonicalRegistry** | Ownable singleton. Manages identifier ownership, identity account deployment, and verifier registration. Holds no funds. |
+| **IdentityAccount** | Per-identifier smart account deployed as a `BeaconProxy` via CREATE2. Accepts ETH and ERC-20 deposits. The registered owner calls `execute` to interact with any contract. |
+| **ICanonicalRegistry** | Minimal interface consumed by `IdentityAccount` to resolve the registered owner. |
+| **IVerifier** | Verifier interface — one `verify(id, claimant, proof)` function. Implement to add a new namespace. |
+| **VerifierOracle** | Abstract base: EIP-712 typed-data proof verification against a trusted signer. |
+| **VerifierGitHub** | Extends `VerifierOracle`. Oracle confirms GitHub repo admin access via OAuth. |
+| **VerifierDns** | Extends `VerifierOracle`. Oracle confirms domain ownership via DNS TXT record. |
+| **SplitsWarehouse** | Bundled copy of the 0xSplits ERC-6909 vault (used locally; on testnet/mainnet the existing deployment is referenced). |
+| **TestToken** | Minimal ERC-20 for local development only. |
 
-## Local Development
+## Source layout
 
-### Tests
+```
+contracts/
+  CanonicalRegistry.sol     — registry singleton
+  IdentityAccount.sol       — per-identifier smart account
+  ICanonicalRegistry.sol    — interface for IdentityAccount
+  IVerifier.sol             — verifier interface
+  verifiers/
+    VerifierOracle.sol      — EIP-712 oracle base
+    VerifierGitHub.sol      — GitHub verifier
+    VerifierDns.sol         — DNS verifier
+  splits/                   — bundled 0xSplits contracts (local dev)
+  mock/
+    TestToken.sol           — ERC-20 test token
+    Multicall3.sol          — local Multicall3 mock
+ignition/
+  modules/
+    Registry.ts             — local dev (deploys everything)
+    Registry.sepolia.ts     — Sepolia (uses external SplitsWarehouse + test tokens)
+    Registry.production.ts  — mainnet/production (no test tokens)
+    TestTokens.ts           — test token sub-module
+  parameters/
+    hardhat.json
+    sepolia.json
+    mainnet.json
+```
+
+## Local development
+
+### Run tests
 
 ```bash
 pnpm hardhat test
 ```
 
-### Deploy locally
-
-Deploy full stack to a local Hardhat node:
+### Start a local node and deploy
 
 ```bash
-# Terminal 1: start node
+# Terminal 1
 pnpm hardhat node
 
-# Terminal 2: deploy
-pnpm hardhat ignition deploy ignition/modules/Strategy.ts --network localhost
-pnpm hardhat ignition deploy ignition/modules/ENS.dev.ts --network localhost
+# Terminal 2
+pnpm hardhat ignition deploy ignition/modules/Registry.ts --network localhost
+```
 
-# Generate deployments.json (SDK, indexer, web)
+The local module deploys: `SplitsWarehouse`, `IdentityAccount` (implementation), `CanonicalRegistry`, `DnsVerifier`, `GitHubVerifier`, and test tokens (USDC, WETH, DAI). The deployer account is set as both `admin` and `trustedSigner`.
+
+### Generate deployments.json
+
+After any deployment, regenerate the shared deployments file used by the SDK, indexer, and web app:
+
+```bash
 pnpm run generate-abi
 ```
 
-**Strategy.ts** deploys: SplitsWarehouse, Strategy (implementation), StrategyFactory, Multicall3, and test tokens (USDC, WETH, DAI).
+This writes `deployments.json` (addresses + ABIs) into `packages/sdk`, `packages/indexer`, and `apps/web`.
 
-**ENS.dev.ts** deploys a complete ENS infrastructure for local testing that matches official ENS behavior:
-
-- Strict authorization for reverse records (matching Sepolia/mainnet)
-- No trusted relationships that don't exist in production
-- Tests will catch authorization issues before deploying to testnet
-
-## Sepolia / Mainnet
-
-Use the **production** module so the official SplitsWarehouse is used and test tokens are not deployed.
+## Sepolia
 
 ### 1. Environment
 
@@ -59,195 +88,67 @@ pnpm hardhat keystore set SEPOLIA_PRIVATE_KEY
 # SEPOLIA_PRIVATE_KEY=0x...
 ```
 
-### 2. Deploy Curator contracts (Sepolia)
+### 2. Set parameters
 
-```bash
-pnpm hardhat ignition deploy ignition/modules/Strategy.production.ts \
-  --network sepolia \
-  --parameters ignition/parameters/sepolia.json
-```
-
-This uses SplitsWarehouse at `0x8fb66F38cF86A3d5e8768f8F1754A24A6c661Fb8` and deploys only Strategy (implementation) and StrategyFactory. No test tokens.
-
-### 3. ENS Registrar (optional)
-
-If you use ENS subdomains (e.g. `strategy.support.eth`):
-
-#### Prerequisites
-
-1. **Own the parent domain** (e.g., `support-dev.eth`) on the target network
-2. **Wrap it in NameWrapper with CANNOT_UNWRAP fuse** - Required for ForeverSubnameRegistrar to work
-3. **Deploy the registrar**
-4. **Approve the registrar** to manage subdomains
-
-#### Step 1: Wrap Parent Domain with CANNOT_UNWRAP Fuse
-
-The ForeverSubnameRegistrar requires the parent domain to have the `CANNOT_UNWRAP` fuse burned. This allows it to create subdomains with `PARENT_CANNOT_CONTROL`.
-
-**Calculate tokenId for your domain:**
-
-```bash
-bun -e "import { id } from 'ethers'; console.log(id('your-label'))"
-# For support-dev.eth: 0xbf7423a8dd10b7a51c13dedd43d0b64e52728e01bf8c0d327f2ab185a75f9262
-```
-
-**Option A: Using cast (if you have private key)**
-
-```bash
-# 1. Approve NameWrapper to transfer domain from BaseRegistrar
-cast send 0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85 \
-  "approve(address,uint256)" \
-  0x0635513f179D50A207757E05759CbD106d7dFcE8 \
-  <TOKEN_ID> \
-  --private-key $SEPOLIA_PRIVATE_KEY \
-  --rpc-url $SEPOLIA_RPC_URL
-
-# 2. Wrap with CANNOT_UNWRAP fuse (value: 1)
-cast send 0x0635513f179D50A207757E05759CbD106d7dFcE8 \
-  "wrapETH2LD(string,address,uint16,address)" \
-  "your-label" \
-  <OWNER_ADDRESS> \
-  1 \
-  <RESOLVER_ADDRESS> \
-  --private-key $SEPOLIA_PRIVATE_KEY \
-  --rpc-url $SEPOLIA_RPC_URL
-```
-
-**Option B: Using Etherscan + MetaMask**
-
-See `scripts/wrap-ens-domain.html` for a user-friendly interface, or use Etherscan directly:
-
-1. **Approve**: https://sepolia.etherscan.io/address/0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85#writeContract
-   - Function: `approve`
-   - Parameters:
-     - `to`: `0x0635513f179D50A207757E05759CbD106d7dFcE8` (NameWrapper)
-     - `tokenId`: Your calculated token ID
-   - Set Gas Limit to: `200000`
-
-2. **Wrap**: https://sepolia.etherscan.io/address/0x0635513f179D50A207757E05759CbD106d7dFcE8#writeContract
-   - Function: `wrapETH2LD`
-   - Parameters:
-     - `label`: `"your-label"` (without .eth)
-     - `wrappedOwner`: Your address
-     - `ownerControlledFuses`: `1` (CANNOT_UNWRAP)
-     - `resolver`: PublicResolver address
-
-#### Step 2: Deploy ForeverSubnameRegistrar
-
-Set the parent domain in `ignition/parameters/sepolia.json`:
+Edit `ignition/parameters/sepolia.json` with your addresses:
 
 ```json
 {
-  "Registrar": {
-    "nameWrapper": "0x0635513f179D50A207757E05759CbD106d7dFcE8",
-    "resolver": "0xE99638b40E4Fff0129D56f03b55b6bbC4BBE49b5",
-    "reverseRegistrar": "0xA0a1AbcDAe1a2a4A2EF8e9113Ff0e02DD81DC0C6",
-    "parentNode": "0x..."
+  "DeployModuleSepolia": {
+    "splitsWarehouse": "0x8fb66F38cF86A3d5e8768f8F1754A24A6c661Fb8",
+    "admin": "0xYourAdminAddress",
+    "trustedSigner": "0xYourOracleSignerAddress"
   }
 }
 ```
 
-Deploy:
+### 3. Deploy
 
 ```bash
-pnpm hardhat ignition deploy ignition/modules/Registrar.ts \
+pnpm hardhat ignition deploy ignition/modules/Registry.sepolia.ts \
   --network sepolia \
   --parameters ignition/parameters/sepolia.json
 ```
 
-#### Step 3: Approve Registrar to Manage Subdomains
+Deploys `IdentityAccount` (impl), `CanonicalRegistry`, `DnsVerifier`, `GitHubVerifier`, and test tokens. References the existing SplitsWarehouse.
 
-On NameWrapper, approve the registrar:
-
-```bash
-cast send 0x0635513f179D50A207757E05759CbD106d7dFcE8 \
-  "setApprovalForAll(address,bool)" \
-  <REGISTRAR_ADDRESS> \
-  true \
-  --private-key $SEPOLIA_PRIVATE_KEY \
-  --rpc-url $SEPOLIA_RPC_URL
-```
-
-Or on Etherscan: https://sepolia.etherscan.io/address/0x0635513f179D50A207757E05759CbD106d7dFcE8#writeContract
-
-#### Step 4: Verify Deployment
+For mainnet (no test tokens):
 
 ```bash
-npm run verify-ens:sepolia
+pnpm hardhat ignition deploy ignition/modules/Registry.production.ts \
+  --network mainnet \
+  --parameters ignition/parameters/mainnet.json
 ```
-
-This will check:
-
-- ENS infrastructure contracts
-- ForeverSubnameRegistrar deployment
-- Parent domain wrapping status
-- Registrar approval
-- Attempt to register `verify.support-dev.eth` as a test
 
 ### 4. Generate ABIs
-
-After any deployment:
 
 ```bash
 pnpm run generate-abi
 ```
 
-Writes `deployments.json` (addresses + ABIs) to `packages/sdk`, `packages/indexer`, and `apps/web`.
-
-### 5. SDK config
-
-Set `packages/sdk/src/config.ts` for the chain:
-
-```typescript
-[sepolia.id]: {
-  factory: "0x...",        // StrategyFactory from deployments
-  warehouse: "0x8fb66F38cF86A3d5e8768f8F1754A24A6c661Fb8",
-  indexer: "https://...",
-  foreverSubnameRegistrar: "0x...", // if using ENS
-}
-```
-
-### 6. Indexer
-
-- In `packages/indexer/ponder.config.ts`, enable the chain (e.g. add `sepolia` to active chains).
-- Set `PONDER_RPC_URL_11155111` (or the chain id) in `packages/indexer/.env.local`.
-- Optionally set a start block in config for faster sync.
-
-### 7. Verify on Etherscan
+### 5. Verify on Etherscan
 
 ```bash
 pnpm hardhat verify --network sepolia <ADDRESS> <CONSTRUCTOR_ARGS>
 ```
 
-Example (StrategyFactory):
-
-```bash
-pnpm hardhat verify --network sepolia 0x... "0x8fb66F38cF86A3d5e8768f8F1754A24A6c661Fb8"
-```
-
 ## Deployment summary
 
-| Network | Module                   | Parameters file                    |
-| ------- | ------------------------ | ---------------------------------- |
-| Local   | `Strategy.ts`            | None                               |
-| Sepolia | `Strategy.production.ts` | `ignition/parameters/sepolia.json` |
-| Mainnet | `Strategy.production.ts` | `ignition/parameters/mainnet.json` |
+| Network | Module | Parameters |
+|---|---|---|
+| Local (Hardhat) | `Registry.ts` | none — deployer is admin + signer |
+| Sepolia | `Registry.sepolia.ts` | `ignition/parameters/sepolia.json` |
+| Mainnet | `Registry.production.ts` | `ignition/parameters/mainnet.json` |
 
-**Shared infrastructure**
+**Shared external contracts**
 
-- SplitsWarehouse: `0x8fb66F38cF86A3d5e8768f8F1754A24A6c661Fb8` (Sepolia & mainnet)
-- Multicall3: `0xcA11bde05977b3631167028862bE2a173976CA11` (Sepolia & mainnet)
-- ENS (Sepolia): NameWrapper `0x0635513f179D50A207757E05759CbD106d7dFcE8`, Resolver `0x8948458626811dd0c23EB25Cc74291247077cC51`
-- ENS (Mainnet): NameWrapper `0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401`, Resolver `0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63`
+| Contract | Address |
+|---|---|
+| SplitsWarehouse (Sepolia & mainnet) | `0x8fb66F38cF86A3d5e8768f8F1754A24A6c661Fb8` |
 
 ## Troubleshooting
 
-- **"Deployment already exists"** – Ignition reuses existing deployments. To start fresh for a chain: remove `ignition/deployments/chain-<chainId>/` then redeploy.
-- **ENS registration fails** – Confirm you own and have wrapped the parent domain and have approved the registrar.
-- **Indexer not syncing** – Check RPC URL, contract addresses in config, and start block / chain id.
-
-## Security notes
-
-- Strategy instances are immutable; owner can change allocations but cannot withdraw recipient funds.
-- Funds are distributed into SplitsWarehouse; withdrawals are pull-based by recipients.
-- No upgrade path or admin keys on strategy logic.
+- **"Deployment already exists"** — Ignition reuses existing deployments. To redeploy from scratch, remove `ignition/deployments/chain-<chainId>/` then run the deploy command again.
+- **"account already deployed"** — `deployAccount` reverts if the proxy already exists. Check `predictAddress` first.
+- **Verifier rejects proof** — Ensure the `trustedSigner` in the parameters matches the oracle backend's signing key, and that proofs haven't expired (default TTL: 1 hour).
+- **Indexer not syncing** — Check that `ponder.config.ts` references the correct registry address from `deployments.json` and that `PONDER_RPC_URL_<chainId>` is set.
