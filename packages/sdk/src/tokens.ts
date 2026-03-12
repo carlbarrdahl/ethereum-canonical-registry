@@ -1,5 +1,5 @@
 import { zeroAddress, type Address } from "viem";
-import deployments from "@ethereum-canonical-registry/contracts/deployments.json";
+import deployments from "@ethereum-entity-registry/contracts/deployments.json";
 
 export type TokenConfig = {
   address: Address;

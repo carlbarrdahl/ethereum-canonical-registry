@@ -13,7 +13,7 @@ Minimal, self-contained reference implementation of the Identity Account standar
 
 ## Notes
 
-- This implementation uses EIP-1167 minimal proxies for simplicity. Production deployments may use BeaconProxy for upgradeability (as in the [full implementation](https://github.com/carlbarrdahl/ethereum-canonical-registry)).
+- This implementation uses EIP-1167 minimal proxies for simplicity. Production deployments may use BeaconProxy for upgradeability (as in the [full implementation](https://github.com/carlbarrdahl/ethereum-entity-registry)).
 - The `execute` function allows the registered owner to make any call through the account. Token withdrawals, protocol interactions, and any other on-chain action are all performed via `execute`.
 - No external dependencies — all interaction is done via low-level calls.
 - The factory can be embedded into the registry contract or deployed standalone.

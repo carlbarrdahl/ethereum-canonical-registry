@@ -1,11 +1,11 @@
 ---
 title: Concepts
-description: Mental model for the Canonical Registry — identifiers, namespaces, verifiers, identity accounts, and aliases
+description: Mental model for the Entity Registry — identifiers, namespaces, verifiers, identity accounts, and aliases
 ---
 
 # Concepts
 
-The Canonical Registry is built on a small set of composable primitives. This page explains the mental model. For precise behavior, see [Requirements](/docs/requirements).
+The Entity Registry is built on a small set of composable primitives. This page explains the mental model. For precise behavior, see [Requirements](/docs/requirements).
 
 ## Identifiers
 
@@ -25,7 +25,7 @@ Examples:
 You can compute this locally — no RPC call needed:
 
 ```typescript
-import { toId, canonicalise } from '@ethereum-canonical-registry/sdk';
+import { toId, canonicalise } from '@ethereum-entity-registry/sdk';
 
 const id = toId('github', canonicalise('Org/Repo')); // lowercased to "org/repo"
 ```

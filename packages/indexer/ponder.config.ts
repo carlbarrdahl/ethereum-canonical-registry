@@ -9,7 +9,7 @@ import { type Abi, parseAbiItem } from "viem";
 import { hardhat, sepolia, mainnet } from "viem/chains";
 import { http } from "viem";
 
-import deployments from "@ethereum-canonical-registry/contracts/deployments.json";
+import deployments from "@ethereum-entity-registry/contracts/deployments.json";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -111,10 +111,10 @@ function forChains<T>(fn: (chainId: number) => T): Record<string, T> {
 export default createConfig({
   chains,
   contracts: {
-    CanonicalRegistry: {
-      abi: getDeployment(hardhat.id, "CanonicalRegistry").abi,
+    EntityRegistry: {
+      abi: getDeployment(hardhat.id, "EntityRegistry").abi,
       chain: forChains((id) => {
-        const d = getDeployment(id, "CanonicalRegistry");
+        const d = getDeployment(id, "EntityRegistry");
         return { address: d?.address, startBlock: d?.startBlock ?? 0 };
       }),
     },

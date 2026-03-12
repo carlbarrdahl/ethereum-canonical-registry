@@ -1,3 +1,3 @@
-# `@ethereum-canonical-registry/typescript-config`
+# `@ethereum-entity-registry/typescript-config`
 
 Shared typescript configuration for the workspace.

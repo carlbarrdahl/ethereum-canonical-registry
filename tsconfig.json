@@ -1,3 +1,3 @@
 {
-  "extends": "@ethereum-canonical-registry/typescript-config/base.json"
+  "extends": "@ethereum-entity-registry/typescript-config/base.json"
 }

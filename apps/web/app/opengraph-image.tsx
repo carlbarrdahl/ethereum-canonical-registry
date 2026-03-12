@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 // Image metadata
-export const alt = "Canonical Registry - Off-chain entity registry";
+export const alt = "Entity Registry - Off-chain entity registry";
 export const size = {
   width: 1200,
   height: 630,
@@ -46,7 +46,7 @@ export default async function Image() {
               WebkitTextFillColor: "transparent",
             }}
           >
-            Canonical Registry
+            Entity Registry
           </div>
           <div
             style={{

@@ -1,5 +1,5 @@
 {
-  "name": "@ethereum-canonical-registry/sdk",
+  "name": "@ethereum-entity-registry/sdk",
   "version": "0.1.0",
   "type": "module",
   "files": [
@@ -23,7 +23,7 @@
   "dependencies": {
     "@ensdomains/ensjs": "^4.2.2",
     "@urql/core": "^6.0.1",
-    "@ethereum-canonical-registry/contracts": "workspace:*"
+    "@ethereum-entity-registry/contracts": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/react-query": ">=5.0.0",

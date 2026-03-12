@@ -1,6 +1,6 @@
 ---
 title: Requirements
-description: EARS requirements specification for the Canonical Registry
+description: EARS requirements specification for the Entity Registry
 ---
 
 # Requirements
@@ -144,7 +144,7 @@ Structured requirements using [EARS notation](https://alistairmavin.com/ears/) (
 
 ## 12. SDK
 
-**REQ-SDK1** The `CanonicalRegistrySDK` shall auto-configure a `PublicClient` and `Indexer` from the wallet's chain ID, falling back to chain `31337` if no wallet is provided.
+**REQ-SDK1** The `EntityRegistrySDK` shall auto-configure a `PublicClient` and `Indexer` from the wallet's chain ID, falling back to chain `31337` if no wallet is provided.
 
 **REQ-SDK2** The SDK shall provide pure, RPC-free utilities: `toId(namespace, canonicalString)`, `canonicalise(value)`, `parseUrl(input)`, `formatIdentifier(namespace, canonicalString)`, and `parseIdentifier(identifier)`.
 
@@ -156,7 +156,7 @@ Structured requirements using [EARS notation](https://alistairmavin.com/ears/) (
 
 **REQ-SDK5** The SDK shall provide calldata encoding helpers: `account.encodeERC20Transfer(token, to, amount)`, `account.encodeWarehouseWithdraw(warehouse, owner, token)`, and `account.encodeERC721Transfer(nft, from, to, tokenId)`.
 
-**REQ-SDK6** The SDK shall provide a `CanonicalRegistryProvider` React context and `useCanonicalRegistrySDK()` hook.
+**REQ-SDK6** The SDK shall provide a `EntityRegistryProvider` React context and `useEntityRegistrySDK()` hook.
 
 **REQ-SDK7** The SDK shall provide React query hooks: `useIdentifier`, `useIdentifiers`, `useAliases`, `useRegistryStats`.
 

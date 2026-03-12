@@ -1,5 +1,5 @@
 {
-  "name": "@ethereum-canonical-registry/contracts",
+  "name": "@ethereum-entity-registry/contracts",
   "version": "1.0.0",
   "type": "module",
   "files": [
@@ -18,6 +18,8 @@
     "test": "npx hardhat test nodejs",
     "deploy": "bun run build && bun x hardhat ignition deploy ignition/modules/Registry.ts --network localhost --reset && bun run generate-abi",
     "deploy:sepolia": "bun run build && bun x hardhat ignition deploy ignition/modules/Registry.sepolia.ts --network sepolia --parameters ignition/parameters/sepolia.json && bun run generate-abi",
+    "deploy:base-sepolia": "bun run build && bun x hardhat ignition deploy ignition/modules/Registry.base-sepolia.ts --network base-sepolia --parameters ignition/parameters/base-sepolia.json && bun run generate-abi",
+    "deploy:base": "bun run build && bun x hardhat ignition deploy ignition/modules/Registry.production.ts --network base --parameters ignition/parameters/base.json && bun run generate-abi",
     "deploy:mainnet": "bun run build && bun x hardhat ignition deploy ignition/modules/Registry.production.ts --network mainnet --parameters ignition/parameters/mainnet.json && bun run generate-abi",
     "seed": "bun run scripts/seed.ts",
     "generate-abi": "bun run scripts/generate-abi.ts",

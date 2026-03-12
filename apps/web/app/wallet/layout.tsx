@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   description:
     "View your claimed identifiers and manage your identity accounts.",
   openGraph: {
-    title: "My Wallet - Canonical Registry",
+    title: "My Wallet - Entity Registry",
     description:
       "View your claimed identifiers and manage your identity accounts.",
   },

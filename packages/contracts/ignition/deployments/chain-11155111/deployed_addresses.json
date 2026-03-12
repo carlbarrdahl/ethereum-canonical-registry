@@ -1,0 +1,9 @@
+{
+  "DeployModuleSepolia#IdentityAccount": "0xc0ACa109461585FFA70E7a2A098A67e2650a6e0C",
+  "TestTokens#TokenDAI": "0xBfb4c9be353e16D14ADe4E7e6eDd4A811FF7636e",
+  "TestTokens#TokenUSDC": "0x84DFA8f258071C388B25C6E613fc22c06dbD5Fc4",
+  "TestTokens#TokenWETH": "0xc8744b52171689070B178cc62B82a616EF16d019",
+  "DeployModuleSepolia#CanonicalRegistry": "0x9A778F8002e61B8e955c1FC20190b8D27A824142",
+  "DeployModuleSepolia#DnsVerifier": "0x6cD40d5FEedfe4d297bAd5b3D9be5EC865dE6a85",
+  "DeployModuleSepolia#GitHubVerifier": "0xE1709Ff730b63C123f0c031Eb445e8cB27DeA409"
+}

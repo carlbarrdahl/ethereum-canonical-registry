@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import {ICanonicalRegistry} from "./ICanonicalRegistry.sol";
+import {IEntityRegistry} from "./IEntityRegistry.sol";
 
 /// @title  IdentityAccount (Implementation)
 /// @notice One proxy is deployed (via CREATE2 + BeaconProxy) per canonical identifier.
@@ -11,10 +11,10 @@ import {ICanonicalRegistry} from "./ICanonicalRegistry.sol";
 ///         Once claimed, the registered owner can call `execute` to interact with
 ///         any contract through this account.
 ///
-/// @dev    Deployed behind a BeaconProxy by CanonicalRegistry.
+/// @dev    Deployed behind a BeaconProxy by EntityRegistry.
 ///         The beacon can be upgraded to add functionality without changing any proxy address.
 contract IdentityAccount is Initializable {
-    ICanonicalRegistry public registry;
+    IEntityRegistry public registry;
     bytes32 public id;
 
     constructor() {
@@ -22,7 +22,7 @@ contract IdentityAccount is Initializable {
     }
 
     function initialize(address registry_, bytes32 id_) external initializer {
-        registry = ICanonicalRegistry(registry_);
+        registry = IEntityRegistry(registry_);
         id = id_;
     }
 

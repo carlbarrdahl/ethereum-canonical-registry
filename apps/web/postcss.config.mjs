@@ -1,1 +1,1 @@
-export { default } from "@ethereum-canonical-registry/ui/postcss.config";
+export { default } from "@ethereum-entity-registry/ui/postcss.config";

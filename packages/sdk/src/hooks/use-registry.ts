@@ -1,6 +1,6 @@
 "use client";
 
-import { useCanonicalRegistrySDK } from "../components/provider";
+import { useEntityRegistrySDK } from "../components/provider";
 import {
   useMutation,
   useQuery,
@@ -20,7 +20,7 @@ export function useOwnerOf(
   id: `0x${string}` | undefined,
   opts?: QueryOptions,
 ): UseQueryResult<Address | null> {
-  const { sdk } = useCanonicalRegistrySDK();
+  const { sdk } = useEntityRegistrySDK();
   return useQuery({
     queryKey: ["registry", "ownerOf", id],
     queryFn: async () => {
@@ -36,7 +36,7 @@ export function usePredictAddress(
   id: `0x${string}` | undefined,
   opts?: QueryOptions,
 ): UseQueryResult<Address | null> {
-  const { sdk } = useCanonicalRegistrySDK();
+  const { sdk } = useEntityRegistrySDK();
   return useQuery({
     queryKey: ["registry", "predictAddress", id],
     queryFn: async () => {
@@ -53,7 +53,7 @@ export function useToId(
   canonicalString: string | undefined,
   opts?: QueryOptions,
 ): UseQueryResult<`0x${string}` | null> {
-  const { sdk } = useCanonicalRegistrySDK();
+  const { sdk } = useEntityRegistrySDK();
   return useQuery({
     queryKey: ["registry", "toId", namespace, canonicalString],
     queryFn: async () => {
@@ -76,7 +76,7 @@ export function useClaim(
     { input: string; proof: `0x${string}` }
   >,
 ) {
-  const { sdk } = useCanonicalRegistrySDK();
+  const { sdk } = useEntityRegistrySDK();
   const invalidate = useInvalidate();
 
   return useMutation({
@@ -114,7 +114,7 @@ export function useRevoke(
     { input: string }
   >,
 ) {
-  const { sdk } = useCanonicalRegistrySDK();
+  const { sdk } = useEntityRegistrySDK();
   const invalidate = useInvalidate();
 
   return useMutation({
@@ -142,7 +142,7 @@ export function useLinkIds(
     { primaryId: `0x${string}`; aliasIds: `0x${string}`[] }
   >,
 ) {
-  const { sdk } = useCanonicalRegistrySDK();
+  const { sdk } = useEntityRegistrySDK();
   const invalidate = useInvalidate();
 
   return useMutation({
@@ -176,7 +176,7 @@ export function useUnlinkIds(
     { primaryId: `0x${string}`; aliasIds: `0x${string}`[] }
   >,
 ) {
-  const { sdk } = useCanonicalRegistrySDK();
+  const { sdk } = useEntityRegistrySDK();
   const invalidate = useInvalidate();
 
   return useMutation({
@@ -210,7 +210,7 @@ export function useDeployAccount(
     { id: `0x${string}` }
   >,
 ) {
-  const { sdk } = useCanonicalRegistrySDK();
+  const { sdk } = useEntityRegistrySDK();
   const invalidate = useInvalidate();
 
   return useMutation({

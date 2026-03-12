@@ -6,7 +6,7 @@ import { identifier, identifierAlias } from "ponder:schema";
  * - Upsert identifier row with owner, claimedAt
  * - Clear any stale revokedAt
  */
-ponder.on("CanonicalRegistry:Claimed", async ({ event, context }) => {
+ponder.on("EntityRegistry:Claimed", async ({ event, context }) => {
   const { db } = context;
   const { id, namespace, canonicalString, owner } = event.args;
 
@@ -33,7 +33,7 @@ ponder.on("CanonicalRegistry:Claimed", async ({ event, context }) => {
  * Handle Revoked event
  * - Clear owner, set revokedAt
  */
-ponder.on("CanonicalRegistry:Revoked", async ({ event, context }) => {
+ponder.on("EntityRegistry:Revoked", async ({ event, context }) => {
   const { db } = context;
   const { id } = event.args;
 
@@ -47,7 +47,7 @@ ponder.on("CanonicalRegistry:Revoked", async ({ event, context }) => {
  * Handle Linked event
  * - Create alias row
  */
-ponder.on("CanonicalRegistry:Linked", async ({ event, context }) => {
+ponder.on("EntityRegistry:Linked", async ({ event, context }) => {
   const { db } = context;
   const { aliasId, primaryId } = event.args;
 
@@ -68,7 +68,7 @@ ponder.on("CanonicalRegistry:Linked", async ({ event, context }) => {
  * Handle Unlinked event
  * - Delete alias row
  */
-ponder.on("CanonicalRegistry:Unlinked", async ({ event, context }) => {
+ponder.on("EntityRegistry:Unlinked", async ({ event, context }) => {
   const { db } = context;
   const { aliasId, primaryId } = event.args;
 
@@ -82,7 +82,7 @@ ponder.on("CanonicalRegistry:Unlinked", async ({ event, context }) => {
  * - Update identifier with account address
  * - Create identifier row if not yet present (account can be deployed before claim)
  */
-ponder.on("CanonicalRegistry:AccountDeployed", async ({ event, context }) => {
+ponder.on("EntityRegistry:AccountDeployed", async ({ event, context }) => {
   const { db } = context;
   const { id, account } = event.args;
 

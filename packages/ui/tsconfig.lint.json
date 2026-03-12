@@ -1,5 +1,5 @@
 {
-  "extends": "@ethereum-canonical-registry/typescript-config/react-library.json",
+  "extends": "@ethereum-entity-registry/typescript-config/react-library.json",
   "compilerOptions": {
     "outDir": "dist"
   },

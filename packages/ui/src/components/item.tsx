@@ -2,8 +2,8 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 
-import { cn } from "@ethereum-canonical-registry/ui/lib/utils"
-import { Separator } from "@ethereum-canonical-registry/ui/components/separator"
+import { cn } from "@ethereum-entity-registry/ui/lib/utils"
+import { Separator } from "@ethereum-entity-registry/ui/components/separator"
 
 function ItemGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (

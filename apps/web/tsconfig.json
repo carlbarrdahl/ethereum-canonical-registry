@@ -1,10 +1,10 @@
 {
-  "extends": "@ethereum-canonical-registry/typescript-config/nextjs.json",
+  "extends": "@ethereum-entity-registry/typescript-config/nextjs.json",
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@ethereum-canonical-registry/ui/*": ["../../packages/ui/src/*"]
+      "@ethereum-entity-registry/ui/*": ["../../packages/ui/src/*"]
     },
     "plugins": [
       {

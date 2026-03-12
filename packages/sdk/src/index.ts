@@ -8,7 +8,7 @@ import {
 import { mainnet, sepolia, hardhat } from "viem/chains";
 import { createIndexer, type Indexer } from "./lib/indexer";
 import { config, type SupportedChainId } from "./config";
-import deployments from "@ethereum-canonical-registry/contracts/deployments.json";
+import deployments from "@ethereum-entity-registry/contracts/deployments.json";
 
 import { createRegistryMethods } from "./registry";
 import { createAccountMethods } from "./account";
@@ -43,7 +43,7 @@ function getChain(chainId: SupportedChainId) {
   }
 }
 
-export class CanonicalRegistrySDK {
+export class EntityRegistrySDK {
   #wallet: WalletClient | undefined;
   #public: PublicClient;
   #chainId: SupportedChainId;

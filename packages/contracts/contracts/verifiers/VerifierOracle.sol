@@ -21,7 +21,7 @@ abstract contract OracleVerifier is IVerifier, Ownable {
     bytes32 private constant EIP712_DOMAIN_TYPEHASH = keccak256(
         "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
     );
-    bytes32 private constant NAME_HASH = keccak256("CanonicalRegistry");
+    bytes32 private constant NAME_HASH = keccak256("EntityRegistry");
     bytes32 private constant VERSION_HASH = keccak256("1");
 
     bytes32 public constant OWNERSHIP_PROOF_TYPEHASH = keccak256(

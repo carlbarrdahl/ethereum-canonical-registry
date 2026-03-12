@@ -1,7 +1,7 @@
 "use client";
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { Button } from "@ethereum-canonical-registry/ui/components/button";
+import { Button } from "@ethereum-entity-registry/ui/components/button";
 import { FaucetButton } from "./dev/faucet-button";
 
 export function LoginButton() {

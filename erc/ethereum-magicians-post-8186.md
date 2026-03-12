@@ -41,6 +41,6 @@ This is strictly more capable: the owner can encode an ERC-20 `transfer`, a Spli
 ### Reference
 
 - Minimal reference contracts: included in the ERC `assets/erc-8186/` directory
-- Full implementation (not audited): [ethereum-canonical-registry](https://github.com/carlbarrdahl/ethereum-canonical-registry)
+- Full implementation (not audited): [ethereum-entity-registry](https://github.com/carlbarrdahl/ethereum-entity-registry)
 
 Feedback welcome — particularly on the `execute` interface and whether reentrancy guards should be REQUIRED vs RECOMMENDED.

@@ -1,5 +1,5 @@
 {
-  "name": "ethereum-canonical-registry",
+  "name": "ethereum-entity-registry",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -20,8 +20,8 @@
     ]
   },
   "devDependencies": {
-    "@ethereum-canonical-registry/eslint-config": "workspace:*",
-    "@ethereum-canonical-registry/typescript-config": "workspace:*",
+    "@ethereum-entity-registry/eslint-config": "workspace:*",
+    "@ethereum-entity-registry/typescript-config": "workspace:*",
     "eslint": "^10.0.0",
     
     "lint-staged": "^16.2.7",

@@ -17,19 +17,19 @@ import {
 } from "lucide-react";
 
 import {
-  useCanonicalRegistrySDK,
+  useEntityRegistrySDK,
   getTokens,
   isNativeToken,
   parseUrl,
   canonicalise,
   type ParsedUrl,
   type IdentifierState,
-} from "@ethereum-canonical-registry/sdk";
+} from "@ethereum-entity-registry/sdk";
 
-import { Button } from "@ethereum-canonical-registry/ui/components/button";
-import { Input } from "@ethereum-canonical-registry/ui/components/input";
-import { Badge } from "@ethereum-canonical-registry/ui/components/badge";
-import { Alert, AlertDescription } from "@ethereum-canonical-registry/ui/components/alert";
+import { Button } from "@ethereum-entity-registry/ui/components/button";
+import { Input } from "@ethereum-entity-registry/ui/components/input";
+import { Badge } from "@ethereum-entity-registry/ui/components/badge";
+import { Alert, AlertDescription } from "@ethereum-entity-registry/ui/components/alert";
 
 import { SelectToken } from "@/components/select-token";
 import { useTransfer } from "@/hooks/use-transfer";
@@ -78,7 +78,7 @@ export default function Page() {
     tokens[0]?.address,
   );
 
-  const { sdk } = useCanonicalRegistrySDK();
+  const { sdk } = useEntityRegistrySDK();
   const { address: account } = useAccount();
 
   const resolveForm = useForm<ResolveForm>();
@@ -370,7 +370,7 @@ function ExecuteActions({
   state: IdentifierState;
   token: Address;
 }) {
-  const { sdk } = useCanonicalRegistrySDK();
+  const { sdk } = useEntityRegistrySDK();
   const { address: account } = useAccount();
   const [pending, setPending] = useState<string | null>(null);
 

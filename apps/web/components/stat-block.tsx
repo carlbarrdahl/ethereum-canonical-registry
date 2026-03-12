@@ -1,5 +1,5 @@
 import { type LucideIcon } from "lucide-react";
-import { cn } from "@ethereum-canonical-registry/ui/lib/utils";
+import { cn } from "@ethereum-entity-registry/ui/lib/utils";
 
 interface StatBlockProps {
   icon?: LucideIcon;

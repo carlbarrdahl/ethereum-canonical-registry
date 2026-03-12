@@ -7,48 +7,48 @@ import {
   useState,
   type PropsWithChildren,
 } from "react";
-import { CanonicalRegistrySDK, type SupportedChainId } from "..";
+import { EntityRegistrySDK, type SupportedChainId } from "..";
 import type { WalletClient } from "viem";
 
-type CanonicalRegistryContextValue<T extends CanonicalRegistrySDK = CanonicalRegistrySDK> = {
+type EntityRegistryContextValue<T extends EntityRegistrySDK = EntityRegistrySDK> = {
   sdk: T | null;
 };
 
-const CanonicalRegistryContext = createContext<CanonicalRegistryContextValue>({
+const EntityRegistryContext = createContext<EntityRegistryContextValue>({
   sdk: null,
 });
 
-type CanonicalRegistryProviderProps<T extends CanonicalRegistrySDK> = PropsWithChildren<{
+type EntityRegistryProviderProps<T extends EntityRegistrySDK> = PropsWithChildren<{
   client?: WalletClient;
   defaultChain?: SupportedChainId;
 }>;
 
-export function CanonicalRegistryProvider<T extends CanonicalRegistrySDK = CanonicalRegistrySDK>({
+export function EntityRegistryProvider<T extends EntityRegistrySDK = EntityRegistrySDK>({
   children,
   client,
   defaultChain,
-}: CanonicalRegistryProviderProps<T>): React.ReactNode {
-  const [sdk, setSdk] = useState<CanonicalRegistrySDK | null>(() => {
-    return new CanonicalRegistrySDK(client, defaultChain);
+}: EntityRegistryProviderProps<T>): React.ReactNode {
+  const [sdk, setSdk] = useState<EntityRegistrySDK | null>(() => {
+    return new EntityRegistrySDK(client, defaultChain);
   });
 
   useEffect(() => {
-    setSdk(new CanonicalRegistrySDK(client, defaultChain));
+    setSdk(new EntityRegistrySDK(client, defaultChain));
   }, [client, defaultChain]);
 
   return (
-    <CanonicalRegistryContext.Provider value={{ sdk }}>
+    <EntityRegistryContext.Provider value={{ sdk }}>
       {children}
-    </CanonicalRegistryContext.Provider>
+    </EntityRegistryContext.Provider>
   );
 }
 
-export function useCanonicalRegistrySDK<T extends CanonicalRegistrySDK = CanonicalRegistrySDK>(): {
+export function useEntityRegistrySDK<T extends EntityRegistrySDK = EntityRegistrySDK>(): {
   sdk: T | null;
 } {
-  const context = useContext(CanonicalRegistryContext);
+  const context = useContext(EntityRegistryContext);
   if (!context) {
-    throw new Error("useCanonicalRegistrySDK must be used within a CanonicalRegistryProvider");
+    throw new Error("useEntityRegistrySDK must be used within a EntityRegistryProvider");
   }
   return context as { sdk: T | null };
 }

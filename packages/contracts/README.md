@@ -1,14 +1,14 @@
-# @ethereum-canonical-registry/contracts
+# @ethereum-entity-registry/contracts
 
-Solidity smart contracts for the Canonical Registry.
+Solidity smart contracts for the Entity Registry.
 
 ## Contracts
 
 | Contract | Purpose |
 |---|---|
-| **CanonicalRegistry** | Ownable singleton. Manages identifier ownership, identity account deployment, and verifier registration. Holds no funds. |
+| **EntityRegistry** | Ownable singleton. Manages identifier ownership, identity account deployment, and verifier registration. Holds no funds. |
 | **IdentityAccount** | Per-identifier smart account deployed as a `BeaconProxy` via CREATE2. Accepts ETH and ERC-20 deposits. The registered owner calls `execute` to interact with any contract. |
-| **ICanonicalRegistry** | Minimal interface consumed by `IdentityAccount` to resolve the registered owner. |
+| **IEntityRegistry** | Minimal interface consumed by `IdentityAccount` to resolve the registered owner. |
 | **IVerifier** | Verifier interface — one `verify(id, claimant, proof)` function. Implement to add a new namespace. |
 | **VerifierOracle** | Abstract base: EIP-712 typed-data proof verification against a trusted signer. |
 | **VerifierGitHub** | Extends `VerifierOracle`. Oracle confirms GitHub repo admin access via OAuth. |
@@ -19,9 +19,9 @@ Solidity smart contracts for the Canonical Registry.
 
 ```
 contracts/
-  CanonicalRegistry.sol     — registry singleton
+  EntityRegistry.sol     — registry singleton
   IdentityAccount.sol       — per-identifier smart account
-  ICanonicalRegistry.sol    — interface for IdentityAccount
+  IEntityRegistry.sol    — interface for IdentityAccount
   IVerifier.sol             — verifier interface
   verifiers/
     VerifierOracle.sol      — EIP-712 oracle base
@@ -61,7 +61,7 @@ pnpm hardhat node
 pnpm hardhat ignition deploy ignition/modules/Registry.ts --network localhost
 ```
 
-The local module deploys: `IdentityAccount` (implementation), `CanonicalRegistry`, `DnsVerifier`, `GitHubVerifier`, and test tokens (USDC, WETH, DAI). The deployer account is set as both `admin` and `trustedSigner`.
+The local module deploys: `IdentityAccount` (implementation), `EntityRegistry`, `DnsVerifier`, `GitHubVerifier`, and test tokens (USDC, WETH, DAI). The deployer account is set as both `admin` and `trustedSigner`.
 
 ### Generate deployments.json
 
@@ -108,7 +108,7 @@ pnpm hardhat ignition deploy ignition/modules/Registry.sepolia.ts \
   --parameters ignition/parameters/sepolia.json
 ```
 
-Deploys `IdentityAccount` (impl), `CanonicalRegistry`, `DnsVerifier`, `GitHubVerifier`, and test tokens.
+Deploys `IdentityAccount` (impl), `EntityRegistry`, `DnsVerifier`, `GitHubVerifier`, and test tokens.
 
 For mainnet (no test tokens):
 

@@ -31,6 +31,6 @@ Every protocol that needs to address off-chain entities builds its own resolutio
 ### Reference
 
 - Minimal reference contracts: included in the ERC `assets/erc-8185/` directory
-- Full implementation (not audited): [ethereum-canonical-registry](https://github.com/carlbarrdahl/ethereum-canonical-registry)
+- Full implementation (not audited): [ethereum-entity-registry](https://github.com/carlbarrdahl/ethereum-entity-registry)
 
 Feedback welcome — particularly on the verifier interface design and any overlapping ERCs I've missed.

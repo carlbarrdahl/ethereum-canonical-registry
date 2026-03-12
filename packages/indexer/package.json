@@ -1,5 +1,5 @@
 {
-  "name": "@ethereum-canonical-registry/indexer",
+  "name": "@ethereum-entity-registry/indexer",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -15,8 +15,8 @@
   },
   "dependencies": {
     "@urql/core": "^6.0.1",
-    "@ethereum-canonical-registry/contracts": "workspace:*",
-    "@ethereum-canonical-registry/sdk": "workspace:*",
+    "@ethereum-entity-registry/contracts": "workspace:*",
+    "@ethereum-entity-registry/sdk": "workspace:*",
     "hono": "^4.5.0",
     "node-fetch-cache": "^5.1.0",
     "p-retry": "^7.1.1",

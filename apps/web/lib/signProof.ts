@@ -4,7 +4,7 @@ import { privateKeyToAccount } from "viem/accounts"
 export const PROOF_TTL_SECONDS = 3600
 
 const EIP712_DOMAIN = {
-  name: "CanonicalRegistry",
+  name: "EntityRegistry",
   version: "1",
 } as const
 
@@ -19,7 +19,7 @@ const OWNERSHIP_PROOF_TYPES = {
 /**
  * Signs a canonical ownership proof using EIP-712 typed data and returns
  * ABI-encoded bytes ready to submit as the `proof` argument to
- * `CanonicalRegistry.claim()`.
+ * `EntityRegistry.claim()`.
  */
 export async function signProof(params: {
   namespace: string

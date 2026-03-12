@@ -191,7 +191,7 @@ export function parseAnyIdentifier(input: string): {
  * Derive the beacon address from the registry address.
  *
  * The beacon is deployed with `new UpgradeableBeacon(...)` as the first
- * contract created in the CanonicalRegistry constructor. Per EIP-161, a new
+ * contract created in the EntityRegistry constructor. Per EIP-161, a new
  * contract starts with nonce=1, so the beacon address is the CREATE address
  * of (registryAddress, nonce=1).
  *
@@ -209,7 +209,7 @@ export function deriveBeaconAddress(registryAddress: Address): Address {
  * and does NOT change if the escrow implementation is upgraded via the beacon.
  *
  * @param id               bytes32 identifier from toId()
- * @param registryAddress  deployed CanonicalRegistry address
+ * @param registryAddress  deployed EntityRegistry address
  * @param beaconProxyBytecode  creation bytecode of OpenZeppelin BeaconProxy
  *                             (available as deployments.beaconProxyBytecode)
  */

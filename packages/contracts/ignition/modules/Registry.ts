@@ -2,7 +2,7 @@ import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 import TestTokensModule from "./TestTokens.js";
 
 /**
- * Local development: deploys IdentityAccount (impl), CanonicalRegistry,
+ * Local development: deploys IdentityAccount (impl), EntityRegistry,
  * DnsVerifier, GitHubVerifier, and test tokens.
  *
  * For Sepolia use Registry.sepolia.ts with --parameters.
@@ -12,7 +12,7 @@ export default buildModule("DeployModule", (m) => {
   const deployer = m.getAccount(0);
 
   const accountImpl = m.contract("IdentityAccount", []);
-  const registry = m.contract("CanonicalRegistry", [accountImpl, deployer]);
+  const registry = m.contract("EntityRegistry", [accountImpl, deployer]);
 
   const dnsVerifier = m.contract("DnsVerifier", [
     registry,
