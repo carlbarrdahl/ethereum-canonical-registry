@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 /// @notice Minimal interface consumed by IdentityAccount to resolve the registered owner.
-interface ICanonicalRegistry {
+interface IEntityRegistry {
     /// @return The owner of `id` resolving through any alias, or address(0) if unclaimed.
     function ownerOf(bytes32 id) external view returns (address);
 }

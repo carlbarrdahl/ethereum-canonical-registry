@@ -1,4 +1,4 @@
-# Canonical Registry
+# Entity Registry
 
 **A shared on-chain primitive for addressing off-chain entities on Ethereum.**
 
@@ -10,7 +10,7 @@ Ethereum has a standard way to address humans (ENS) but no standard way to addre
 
 Today each protocol solves this independently — Drips built a GitHub-to-address registry with an oracle, Gitcoin maintains its own project registry. Any new protocol that needs to address off-chain entities either builds another bespoke system or depends on someone else's.
 
-The Canonical Registry is a shared primitive so they don't have to.
+The Entity Registry is a shared primitive so they don't have to.
 
 ---
 
@@ -47,14 +47,14 @@ The deposit address is stable: it does not change if ownership changes or the es
 
 The system is two independent layers:
 
-**CanonicalRegistry** — pure identity. Maps identifiers to addresses. No funds, no escrow, no opinions about how money flows. One deployment per chain.
+**EntityRegistry** — pure identity. Maps identifiers to addresses. No funds, no escrow, no opinions about how money flows. One deployment per chain.
 
 **EscrowFactory + ClaimableEscrow** — optional pre-funding module. Deploys a proxy per identifier at the deterministic deposit address. Holds accumulated funds and releases them to the registrant on claim. Supports both direct ERC-20 transfers and Splits Warehouse deposits.
 
 The registry does not depend on the escrow module. Protocols that only need identity resolution — "who owns this identifier?" — interact with the registry alone:
 
 ```solidity
-interface ICanonicalRegistry {
+interface IEntityRegistry {
     function ownerOf(bytes32 id) external view returns (address);
 }
 ```
@@ -87,9 +87,9 @@ Linked aliases resolve to the primary's registrant transparently through `ownerO
 
 ### vs. ENS
 
-ENS maps human-readable names to addresses. The Canonical Registry maps entity identifiers (repos, domains, packages) to addresses.
+ENS maps human-readable names to addresses. The Entity Registry maps entity identifiers (repos, domains, packages) to addresses.
 
-|                    | ENS                                | Canonical Registry                          |
+|                    | ENS                                | Entity Registry                          |
 | ------------------ | ---------------------------------- | ------------------------------------------- |
 | Subject            | Humans and organisations           | Off-chain entities (repos, domains, packages) |
 | Registration model | Proactive — entity must register first | Counterfactual — address exists before registration |
@@ -101,13 +101,13 @@ The two are complementary. An ENS name can resolve to a registry deposit address
 
 Drips maps GitHub repositories to addresses with pre-funding support, using an oracle to read `FUNDING.json`.
 
-|                       | Drips                              | Canonical Registry                              |
+|                       | Drips                              | Entity Registry                              |
 | --------------------- | ---------------------------------- | ----------------------------------------------- |
 | Scope                 | GitHub repositories                | Any namespace (GitHub, DNS, npm, etc.)          |
 | Verification          | Application-specific oracle        | Pluggable `IVerifier` — oracle now, ZK later    |
 | Design                | Integrated into the Drips protocol | Standalone primitive — any protocol can read it |
 
-Drips could use the Canonical Registry as its identity layer instead of maintaining a separate resolution system.
+Drips could use the Entity Registry as its identity layer instead of maintaining a separate resolution system.
 
 ### vs. EAS
 
@@ -129,7 +129,7 @@ The escrow module has its own trust surface: the `EscrowFactory` admin can upgra
 
 ## Integration
 
-**On-chain consumer.** Import `ICanonicalRegistry`. Call `ownerOf(id)`. Route funds to the returned address if claimed, or to the deposit address if not.
+**On-chain consumer.** Import `IEntityRegistry`. Call `ownerOf(id)`. Route funds to the returned address if claimed, or to the deposit address if not.
 
 **Distribution protocol.** Resolve identifiers to addresses at allocation creation time. Store plain Ethereum addresses. No registry interaction at distribution time.
 

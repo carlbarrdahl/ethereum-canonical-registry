@@ -1,4 +1,4 @@
-# Ethereum Canonical Registry
+# Ethereum Entity Registry
 
 A shared on-chain registry that maps off-chain identifiers (GitHub repos, DNS domains) to Ethereum addresses — deployed once per chain, readable by any protocol.
 
@@ -11,15 +11,15 @@ See [OVERVIEW.md](./OVERVIEW.md) for the problem statement, design rationale, an
 ## Install
 
 ```sh
-npm install @ethereum-canonical-registry/sdk
+npm install @ethereum-entity-registry/sdk
 ```
 
 ## Resolve an Identifier
 
 ```ts
-import { CanonicalRegistrySDK } from "@ethereum-canonical-registry/sdk";
+import { EntityRegistrySDK } from "@ethereum-entity-registry/sdk";
 
-const sdk = new CanonicalRegistrySDK();
+const sdk = new EntityRegistrySDK();
 
 // Accepts URLs, namespace:value, or domain names
 const state = await sdk.registry.resolve("github.com/org/repo");
@@ -99,10 +99,10 @@ Only the registered owner can call `execute` — the identity account verifies o
 ## On-Chain Integration
 
 ```solidity
-import {ICanonicalRegistry} from "@ethereum-canonical-registry/contracts/contracts/ICanonicalRegistry.sol";
+import {IEntityRegistry} from "@ethereum-entity-registry/contracts/contracts/IEntityRegistry.sol";
 
 bytes32 id = keccak256(abi.encode("github", "org/repo"));
-address owner = ICanonicalRegistry(registry).ownerOf(id);
+address owner = IEntityRegistry(registry).ownerOf(id);
 ```
 
 `ownerOf` resolves through aliases transparently.
@@ -111,13 +111,13 @@ address owner = ICanonicalRegistry(registry).ownerOf(id);
 
 ```tsx
 import {
-  CanonicalRegistryProvider,
+  EntityRegistryProvider,
   useIdentifier,
   useClaim,
-} from "@ethereum-canonical-registry/sdk";
+} from "@ethereum-entity-registry/sdk";
 
 function App() {
-  return <CanonicalRegistryProvider>{/* ... */}</CanonicalRegistryProvider>;
+  return <EntityRegistryProvider>{/* ... */}</EntityRegistryProvider>;
 }
 
 function IdentifierCard({ id }: { id: `0x${string}` }) {
@@ -137,7 +137,7 @@ function IdentifierCard({ id }: { id: `0x${string}` }) {
 
 ```
 packages/
-  contracts/   — Solidity contracts (CanonicalRegistry, IdentityAccount, verifiers)
+  contracts/   — Solidity contracts (EntityRegistry, IdentityAccount, verifiers)
   sdk/         — TypeScript SDK + React hooks
   indexer/     — Ponder event indexer
   ui/          — Shared Shadcn UI components

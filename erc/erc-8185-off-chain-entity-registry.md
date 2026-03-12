@@ -260,7 +260,7 @@ A minimal reference implementation is provided in [assets/erc-8185](../assets/er
 - [`OffChainEntityRegistry.sol`](../assets/erc-8185/OffChainEntityRegistry.sol) — registry with claim, revoke, link, unlink
 - [`OracleVerifier.sol`](../assets/erc-8185/OracleVerifier.sol) — example EIP-712 oracle verifier
 
-The implementation has no external dependencies and is intentionally minimal. A more complete implementation with beacon proxy identity accounts, namespace-specific verifiers, and a TypeScript SDK is available at [ethereum-canonical-registry](https://github.com/carlbarrdahl/ethereum-canonical-registry).
+The implementation has no external dependencies and is intentionally minimal. A more complete implementation with beacon proxy identity accounts, namespace-specific verifiers, and a TypeScript SDK is available at [ethereum-entity-registry](https://github.com/carlbarrdahl/ethereum-entity-registry).
 
 ## Security Considerations
 

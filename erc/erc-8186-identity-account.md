@@ -164,7 +164,7 @@ A minimal reference implementation is provided in [assets/erc-8186](../assets/er
 - [`AccountFactory.sol`](../assets/erc-8186/AccountFactory.sol) — factory using EIP-1167 minimal proxies
 - [`IdentityAccount.sol`](../assets/erc-8186/IdentityAccount.sol) — account with `execute` + `receive`
 
-The implementation has no external dependencies and uses EIP-1167 clones for simplicity. A more complete implementation using OpenZeppelin's `UpgradeableBeacon` + `BeaconProxy` is available at [ethereum-canonical-registry](https://github.com/carlbarrdahl/ethereum-canonical-registry).
+The implementation has no external dependencies and uses EIP-1167 clones for simplicity. A more complete implementation using OpenZeppelin's `UpgradeableBeacon` + `BeaconProxy` is available at [ethereum-entity-registry](https://github.com/carlbarrdahl/ethereum-entity-registry).
 
 ## Security Considerations
 

@@ -12,8 +12,8 @@ import {
   type DayButton,
 } from "react-day-picker"
 
-import { cn } from "@ethereum-canonical-registry/ui/lib/utils"
-import { Button, buttonVariants } from "@ethereum-canonical-registry/ui/components/button"
+import { cn } from "@ethereum-entity-registry/ui/lib/utils"
+import { Button, buttonVariants } from "@ethereum-entity-registry/ui/components/button"
 
 function Calendar({
   className,

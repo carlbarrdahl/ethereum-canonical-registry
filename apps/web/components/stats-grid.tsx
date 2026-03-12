@@ -1,4 +1,4 @@
-import { cn } from "@ethereum-canonical-registry/ui/lib/utils";
+import { cn } from "@ethereum-entity-registry/ui/lib/utils";
 
 interface StatsGridProps {
   children: React.ReactNode;

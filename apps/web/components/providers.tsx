@@ -4,9 +4,9 @@ import { PropsWithChildren } from "react";
 import { createConfig, http, useWalletClient, WagmiProvider } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import { CanonicalRegistryProvider } from "@ethereum-canonical-registry/sdk";
+import { EntityRegistryProvider } from "@ethereum-entity-registry/sdk";
 import { hardhat, sepolia } from "viem/chains";
-import { Toaster } from "@ethereum-canonical-registry/ui/components/sonner";
+import { Toaster } from "@ethereum-entity-registry/ui/components/sonner";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import {
   RainbowKitProvider,
@@ -87,8 +87,8 @@ function Registry({ children }: PropsWithChildren) {
   const { data: client } = useWalletClient();
 
   return (
-    <CanonicalRegistryProvider client={client} defaultChain={defaultChain.id}>
+    <EntityRegistryProvider client={client} defaultChain={defaultChain.id}>
       {children}
-    </CanonicalRegistryProvider>
+    </EntityRegistryProvider>
   );
 }

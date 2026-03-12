@@ -4,14 +4,14 @@ import * as React from "react"
 import { Command as CommandPrimitive } from "cmdk"
 import { SearchIcon } from "lucide-react"
 
-import { cn } from "@ethereum-canonical-registry/ui/lib/utils"
+import { cn } from "@ethereum-entity-registry/ui/lib/utils"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@ethereum-canonical-registry/ui/components/dialog"
+} from "@ethereum-entity-registry/ui/components/dialog"
 
 function Command({
   className,

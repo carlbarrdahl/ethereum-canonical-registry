@@ -5,25 +5,25 @@ import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 import { PanelLeftIcon } from "lucide-react"
 
-import { useIsMobile } from "@ethereum-canonical-registry/ui/hooks/use-mobile"
-import { cn } from "@ethereum-canonical-registry/ui/lib/utils"
-import { Button } from "@ethereum-canonical-registry/ui/components/button"
-import { Input } from "@ethereum-canonical-registry/ui/components/input"
-import { Separator } from "@ethereum-canonical-registry/ui/components/separator"
+import { useIsMobile } from "@ethereum-entity-registry/ui/hooks/use-mobile"
+import { cn } from "@ethereum-entity-registry/ui/lib/utils"
+import { Button } from "@ethereum-entity-registry/ui/components/button"
+import { Input } from "@ethereum-entity-registry/ui/components/input"
+import { Separator } from "@ethereum-entity-registry/ui/components/separator"
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@ethereum-canonical-registry/ui/components/sheet"
-import { Skeleton } from "@ethereum-canonical-registry/ui/components/skeleton"
+} from "@ethereum-entity-registry/ui/components/sheet"
+import { Skeleton } from "@ethereum-entity-registry/ui/components/skeleton"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@ethereum-canonical-registry/ui/components/tooltip"
+} from "@ethereum-entity-registry/ui/components/tooltip"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7

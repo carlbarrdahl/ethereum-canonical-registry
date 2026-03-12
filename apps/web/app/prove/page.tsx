@@ -18,15 +18,15 @@ import {
   Link,
 } from "lucide-react";
 
-import { useCanonicalRegistrySDK, useClaim } from "@ethereum-canonical-registry/sdk";
-import deployments from "@ethereum-canonical-registry/contracts/deployments.json";
+import { useEntityRegistrySDK, useClaim } from "@ethereum-entity-registry/sdk";
+import deployments from "@ethereum-entity-registry/contracts/deployments.json";
 
-import { Button } from "@ethereum-canonical-registry/ui/components/button";
-import { Input } from "@ethereum-canonical-registry/ui/components/input";
-import { Label } from "@ethereum-canonical-registry/ui/components/label";
-import { Alert, AlertDescription } from "@ethereum-canonical-registry/ui/components/alert";
-import { Badge } from "@ethereum-canonical-registry/ui/components/badge";
-import { cn } from "@ethereum-canonical-registry/ui/lib/utils";
+import { Button } from "@ethereum-entity-registry/ui/components/button";
+import { Input } from "@ethereum-entity-registry/ui/components/input";
+import { Label } from "@ethereum-entity-registry/ui/components/label";
+import { Alert, AlertDescription } from "@ethereum-entity-registry/ui/components/alert";
+import { Badge } from "@ethereum-entity-registry/ui/components/badge";
+import { cn } from "@ethereum-entity-registry/ui/lib/utils";
 
 type DnsForm = { domain: string };
 
@@ -119,14 +119,14 @@ function ProofResult({
 }
 
 function useRegistryAddress() {
-  const { sdk } = useCanonicalRegistrySDK();
+  const { sdk } = useEntityRegistrySDK();
   const chainId = useChainId();
   const effectiveChainId = (
     sdk?.chainId ?? chainId
   ).toString() as keyof typeof deployments;
   const d = deployments[effectiveChainId];
   return d
-    ? (d as { CanonicalRegistry: { address: string } }).CanonicalRegistry
+    ? (d as { EntityRegistry: { address: string } }).EntityRegistry
         .address
     : null;
 }

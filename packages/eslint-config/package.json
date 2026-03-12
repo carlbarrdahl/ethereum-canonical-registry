@@ -1,5 +1,5 @@
 {
-  "name": "@ethereum-canonical-registry/eslint-config",
+  "name": "@ethereum-entity-registry/eslint-config",
   "version": "0.0.0",
   "type": "module",
   "private": true,

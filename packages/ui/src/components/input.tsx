@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { cn } from "@ethereum-canonical-registry/ui/lib/utils"
+import { cn } from "@ethereum-entity-registry/ui/lib/utils"
 
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (

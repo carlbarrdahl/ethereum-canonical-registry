@@ -3,7 +3,7 @@
 import { useAccount } from "wagmi";
 import Link from "next/link";
 
-import { Button } from "@ethereum-canonical-registry/ui/components/button";
+import { Button } from "@ethereum-entity-registry/ui/components/button";
 import {
   Table,
   TableBody,
@@ -11,8 +11,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@ethereum-canonical-registry/ui/components/table";
-import { Badge } from "@ethereum-canonical-registry/ui/components/badge";
+} from "@ethereum-entity-registry/ui/components/table";
+import { Badge } from "@ethereum-entity-registry/ui/components/badge";
 import {
   ArrowLeftIcon,
   Loader2Icon,
@@ -23,7 +23,7 @@ import {
 
 import {
   useIdentifiers,
-} from "@ethereum-canonical-registry/sdk";
+} from "@ethereum-entity-registry/sdk";
 
 export default function WalletPage() {
   const { address } = useAccount();

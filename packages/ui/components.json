@@ -11,10 +11,10 @@
   },
   "iconLibrary": "lucide",
   "aliases": {
-    "components": "@ethereum-canonical-registry/ui/components",
-    "utils": "@ethereum-canonical-registry/ui/lib/utils",
-    "hooks": "@ethereum-canonical-registry/ui/hooks",
-    "lib": "@ethereum-canonical-registry/ui/lib",
-    "ui": "@ethereum-canonical-registry/ui/components"
+    "components": "@ethereum-entity-registry/ui/components",
+    "utils": "@ethereum-entity-registry/ui/lib/utils",
+    "hooks": "@ethereum-entity-registry/ui/hooks",
+    "lib": "@ethereum-entity-registry/ui/lib",
+    "ui": "@ethereum-entity-registry/ui/components"
   }
 }

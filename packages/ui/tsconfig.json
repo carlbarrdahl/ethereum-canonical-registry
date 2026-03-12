@@ -1,9 +1,9 @@
 {
-  "extends": "@ethereum-canonical-registry/typescript-config/react-library.json",
+  "extends": "@ethereum-entity-registry/typescript-config/react-library.json",
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@ethereum-canonical-registry/ui/*": ["./src/*"]
+      "@ethereum-entity-registry/ui/*": ["./src/*"]
     }
   },
   "include": ["."],

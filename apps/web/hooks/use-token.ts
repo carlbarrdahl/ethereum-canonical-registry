@@ -8,7 +8,7 @@ import {
 } from "wagmi";
 import { useWaitForEvent } from "./use-wait-for-event";
 import { useQueryClient } from "@tanstack/react-query";
-import { isNativeToken } from "@ethereum-canonical-registry/sdk";
+import { isNativeToken } from "@ethereum-entity-registry/sdk";
 
 type TokenData = {
   address?: Address;

@@ -1,4 +1,4 @@
-// Re-export shared utilities from @ethereum-canonical-registry/ui
+// Re-export shared utilities from @ethereum-entity-registry/ui
 
 import { enUS as locale } from "date-fns/locale";
 import {

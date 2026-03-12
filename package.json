@@ -1,5 +1,5 @@
 {
-  "name": "ethereum-canonical-registry",
+  "name": "ethereum-entity-registry",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -8,7 +8,6 @@
     "lint": "turbo lint",
     "check-types": "turbo check-types",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
-    
   },
   "lint-staged": {
     "*.{ts,tsx}": [
@@ -20,10 +19,9 @@
     ]
   },
   "devDependencies": {
-    "@ethereum-canonical-registry/eslint-config": "workspace:*",
-    "@ethereum-canonical-registry/typescript-config": "workspace:*",
+    "@ethereum-entity-registry/eslint-config": "workspace:*",
+    "@ethereum-entity-registry/typescript-config": "workspace:*",
     "eslint": "^10.0.0",
-    
     "lint-staged": "^16.2.7",
     "prettier": "^3.7.4",
     "turbo": "^2.6.3",
@@ -36,5 +34,8 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "overrides": {
+    "viem": "^2.46.2"
+  }
 }

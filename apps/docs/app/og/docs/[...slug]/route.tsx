@@ -17,7 +17,7 @@ export async function GET(
     <DefaultImage
       title={page.data.title}
       description={page.data.description}
-      site="Canonical Registry"
+      site="Entity Registry"
     />,
     {
       width: 1200,

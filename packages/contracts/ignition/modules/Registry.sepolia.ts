@@ -8,12 +8,12 @@ import TestTokensModule from "./TestTokens.js";
  *   pnpm hardhat ignition deploy ignition/modules/Registry.sepolia.ts --network sepolia \
  *     --parameters ignition/parameters/sepolia.json
  */
-export default buildModule("DeployModuleSepolia", (m) => {
+export default buildModule("DeployModule", (m) => {
   const admin = m.getParameter<string>("admin");
   const trustedSigner = m.getParameter<string>("trustedSigner");
 
   const accountImpl = m.contract("IdentityAccount", []);
-  const registry = m.contract("CanonicalRegistry", [accountImpl, admin]);
+  const registry = m.contract("EntityRegistry", [accountImpl, admin]);
 
   const dnsVerifier = m.contract("DnsVerifier", [
     registry,

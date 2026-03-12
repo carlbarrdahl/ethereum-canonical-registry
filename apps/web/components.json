@@ -14,7 +14,7 @@
     "components": "@/components",
     "hooks": "@/hooks",
     "lib": "@/lib",
-    "utils": "@ethereum-canonical-registry/ui/lib/utils",
-    "ui": "@ethereum-canonical-registry/ui/components"
+    "utils": "@ethereum-entity-registry/ui/lib/utils",
+    "ui": "@ethereum-entity-registry/ui/components"
   }
 }

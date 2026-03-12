@@ -5,7 +5,7 @@ import {
   type UseWriteContractReturnType,
   type UseSendTransactionReturnType,
 } from "wagmi";
-import { isNativeToken } from "@ethereum-canonical-registry/sdk";
+import { isNativeToken } from "@ethereum-entity-registry/sdk";
 
 export interface TransferParams {
   token: Address;

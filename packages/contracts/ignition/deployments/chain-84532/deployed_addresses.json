@@ -1,0 +1,9 @@
+{
+  "DeployModule#IdentityAccount": "0xC488d223B6FfdeE8855D3Ba7b4994175b4d5cFd0",
+  "TestTokens#TokenDAI": "0x7EE901005B26b7e3700af367F763AA9090485Ba7",
+  "TestTokens#TokenUSDC": "0x56c530092b2dBb007b896db514B14F029604E424",
+  "TestTokens#TokenWETH": "0x1CE46e82E835dd4F1c519Bf09951887Ee6de0957",
+  "DeployModule#EntityRegistry": "0x081a5907ab0A77fCc84cf217B62730b9341Ee687",
+  "DeployModule#DnsVerifier": "0xD1AF4F708289FB114eaF3a880e94B185618b4144",
+  "DeployModule#GitHubVerifier": "0xefaa6Be4FD67fBF0F471258A93E112570CB09F7F"
+}

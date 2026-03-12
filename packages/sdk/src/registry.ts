@@ -17,7 +17,7 @@ export type IdentifierState = {
 };
 
 type ChainDeployments = {
-  CanonicalRegistry: { address: string; abi: unknown };
+  EntityRegistry: { address: string; abi: unknown };
   beaconProxyBytecode?: string;
 };
 
@@ -26,9 +26,9 @@ export function createRegistryMethods(
   publicClient: PublicClient,
   deployments: ChainDeployments,
 ) {
-  const registryAddress = deployments.CanonicalRegistry.address as Address;
+  const registryAddress = deployments.EntityRegistry.address as Address;
   const beaconProxyBytecode = (deployments.beaconProxyBytecode ?? "") as `0x${string}`;
-  const registryAbi = deployments.CanonicalRegistry.abi as Abi;
+  const registryAbi = deployments.EntityRegistry.abi as Abi;
 
   function getRegistryContract() {
     return getContract({

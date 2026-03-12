@@ -7,12 +7,12 @@ import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
  *   pnpm hardhat ignition deploy ignition/modules/Registry.production.ts --network mainnet \
  *     --parameters ignition/parameters/mainnet.json
  */
-export default buildModule("DeployModuleProduction", (m) => {
+export default buildModule("DeployModule", (m) => {
   const admin = m.getParameter<string>("admin");
   const trustedSigner = m.getParameter<string>("trustedSigner");
 
   const accountImpl = m.contract("IdentityAccount", []);
-  const registry = m.contract("CanonicalRegistry", [accountImpl, admin]);
+  const registry = m.contract("EntityRegistry", [accountImpl, admin]);
 
   const dnsVerifier = m.contract("DnsVerifier", [
     registry,

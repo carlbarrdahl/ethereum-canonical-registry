@@ -1,4 +1,4 @@
-# Canonical Registry — Specification (EARS Notation)
+# Entity Registry — Specification (EARS Notation)
 
 This specification uses EARS (Easy Approach to Requirements Syntax) notation.
 Each requirement follows one of these templates:

@@ -5,8 +5,8 @@ import {
   MoreHorizontalIcon,
 } from "lucide-react"
 
-import { cn } from "@ethereum-canonical-registry/ui/lib/utils"
-import { buttonVariants, type Button } from "@ethereum-canonical-registry/ui/components/button"
+import { cn } from "@ethereum-entity-registry/ui/lib/utils"
+import { buttonVariants, type Button } from "@ethereum-entity-registry/ui/components/button"
 
 function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
   return (

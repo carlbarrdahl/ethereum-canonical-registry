@@ -30,4 +30,4 @@ ERC-8186 depends on ERC-8185 — the account calls `ownerOf(bytes32)` on the reg
 
 ## Production Implementation
 
-A full implementation with BeaconProxy upgradeability, namespace-specific verifiers, a TypeScript SDK, and backend signing services is at [ethereum-canonical-registry](https://github.com/carlbarrdahl/ethereum-canonical-registry).
+A full implementation with BeaconProxy upgradeability, namespace-specific verifiers, a TypeScript SDK, and backend signing services is at [ethereum-entity-registry](https://github.com/carlbarrdahl/ethereum-entity-registry).

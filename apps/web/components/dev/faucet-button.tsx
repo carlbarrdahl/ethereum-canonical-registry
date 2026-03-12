@@ -1,11 +1,11 @@
 "use client";
 
 import { useAccount, useBalance, useChainId } from "wagmi";
-import { Button } from "@ethereum-canonical-registry/ui/components/button";
+import { Button } from "@ethereum-entity-registry/ui/components/button";
 import {
   ButtonGroup,
   ButtonGroupText,
-} from "@ethereum-canonical-registry/ui/components/button-group";
+} from "@ethereum-entity-registry/ui/components/button-group";
 import {
   formatEther,
   createWalletClient,

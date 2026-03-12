@@ -1,4 +1,4 @@
-# Canonical Registry
+# Entity Registry
 
 **A shared on-chain primitive for addressing off-chain entities on Ethereum.**
 
@@ -8,7 +8,7 @@
 
 Many entities that matter to Ethereum — open source repositories, DNS domains, developer communities — exist primarily off-chain and have no Ethereum address. Any protocol that wants to send value or data to them must either require the entity to register an address first, or rely on a trusted intermediary to resolve one on their behalf.
 
-The Canonical Registry eliminates both constraints. It maps off-chain identifiers to Ethereum addresses through pluggable, upgradeable verification, and assigns every identifier a deterministic deposit address before anyone has registered anything. A protocol can address any GitHub repository or DNS domain and deposit funds to it today, without the entity's participation. The entity claims the funds whenever they're ready.
+The Entity Registry eliminates both constraints. It maps off-chain identifiers to Ethereum addresses through pluggable, upgradeable verification, and assigns every identifier a deterministic deposit address before anyone has registered anything. A protocol can address any GitHub repository or DNS domain and deposit funds to it today, without the entity's participation. The entity claims the funds whenever they're ready.
 
 The registry itself is a thin public-good primitive: deployed once per chain, no token, no fee, no privileged operators beyond verifier governance. Any protocol can read it. Any entity can register.
 
@@ -29,7 +29,7 @@ Existing partial solutions don't close the gap:
 - **EAS** provides attestation infrastructure but no claiming mechanism or canonical identifier scheme for off-chain entities.
 - **Drips** maps GitHub repositories to addresses and supports pre-funding, but uses an application-specific oracle and is not designed as a shared primitive.
 
-Every protocol that needs to address off-chain entities currently builds its own bespoke resolution system. The Canonical Registry is a shared layer so they don't have to.
+Every protocol that needs to address off-chain entities currently builds its own bespoke resolution system. The Entity Registry is a shared layer so they don't have to.
 
 ---
 
@@ -104,7 +104,7 @@ If the identifier has aliases, those must be unlinked before revocation. Any ali
 The minimal interface for on-chain consumers:
 
 ```solidity
-interface ICanonicalRegistry {
+interface IEntityRegistry {
     /// @return The registrant address for `id`, resolving through any alias.
     ///         Returns address(0) if unclaimed.
     function ownerOf(bytes32 id) external view returns (address);
@@ -167,7 +167,7 @@ The factory owns an `UpgradeableBeacon` and deploys one `BeaconProxy` per identi
 ```solidity
 contract EscrowFactory {
     UpgradeableBeacon public immutable beacon;
-    ICanonicalRegistry public immutable registry;
+    IEntityRegistry public immutable registry;
 
     /// @notice Returns the deterministic deposit address for `id`.
     ///         Pure computation — no on-chain state required.
@@ -222,11 +222,11 @@ If ownership of an identifier changes (revoke and re-claim), the escrow sends fu
 
 ### On-chain consumer
 
-A contract that needs to route funds to an identifier only needs `ICanonicalRegistry`:
+A contract that needs to route funds to an identifier only needs `IEntityRegistry`:
 
 ```solidity
 bytes32 id = keccak256(abi.encode("github", "org/repo"));
-address registrant = ICanonicalRegistry(registry).ownerOf(id);
+address registrant = IEntityRegistry(registry).ownerOf(id);
 
 if (registrant != address(0)) {
     // Identifier is claimed — send directly to registrant.
@@ -330,13 +330,13 @@ The migration path is: deploy a new `IVerifier` implementation and call `registr
 
 ## Relationship to Existing Projects
 
-**ENS.** Maps human-readable names to addresses. The Canonical Registry maps entity identifiers to addresses. The two are complementary — an ENS name can resolve to a registry deposit address. For DNS domains, the ENS `DNSSECImpl` is the natural upgrade path for the oracle-based DNS verifier.
+**ENS.** Maps human-readable names to addresses. The Entity Registry maps entity identifiers to addresses. The two are complementary — an ENS name can resolve to a registry deposit address. For DNS domains, the ENS `DNSSECImpl` is the natural upgrade path for the oracle-based DNS verifier.
 
 **EAS.** The natural long-term storage layer for ownership attestations. The current registry maintains an internal mapping for self-containment. A future design could use EAS attestations as the canonical source of truth, inheriting EAS's revocation model, indexing, and composability. The conditions for that migration — EAS schema stability, gas cost, upgrade path — are an open research question.
 
 **Splits.** Every deposit address is a first-class Splits Warehouse recipient. The `ClaimableEscrow` handles both Warehouse deposits (via `batchDeposit`) and direct ERC-20 transfers in a single `withdraw` call. Distribution protocols that route funds through the Splits Warehouse can use any deposit address as an allocation recipient without modification.
 
-**Drips.** Maps GitHub repositories to addresses with pre-funding support, using an oracle to read `FUNDING.json`. The Canonical Registry generalises the same pattern across namespaces with a pluggable verifier interface, a defined path toward trustless verification, and a design as a shared primitive rather than application-specific infrastructure.
+**Drips.** Maps GitHub repositories to addresses with pre-funding support, using an oracle to read `FUNDING.json`. The Entity Registry generalises the same pattern across namespaces with a pluggable verifier interface, a defined path toward trustless verification, and a design as a shared primitive rather than application-specific infrastructure.
 
 ---
 

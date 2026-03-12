@@ -1,6 +1,6 @@
 import { type LucideIcon } from "lucide-react";
-import { Badge } from "@ethereum-canonical-registry/ui/components/badge";
-import { cn } from "@ethereum-canonical-registry/ui/lib/utils";
+import { Badge } from "@ethereum-entity-registry/ui/components/badge";
+import { cn } from "@ethereum-entity-registry/ui/lib/utils";
 
 interface SectionHeaderProps {
   title: string;

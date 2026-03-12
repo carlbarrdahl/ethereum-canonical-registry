@@ -6,10 +6,10 @@ import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol"
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import {IVerifier} from "./IVerifier.sol";
-import {ICanonicalRegistry} from "./ICanonicalRegistry.sol";
+import {IEntityRegistry} from "./IEntityRegistry.sol";
 import {IdentityAccount} from "./IdentityAccount.sol";
 
-/// @title  CanonicalRegistry
+/// @title  EntityRegistry
 /// @notice Maps off-chain identifiers (GitHub repos, DNS domains) to Ethereum addresses.
 ///
 /// @dev    This contract handles ownership claims only — it holds no funds.
@@ -24,7 +24,7 @@ import {IdentityAccount} from "./IdentityAccount.sol";
 ///
 ///         Canonicalization rules are namespace-specific and enforced off-chain
 ///         by verifiers and frontends, not by this contract.
-contract CanonicalRegistry is ICanonicalRegistry, Ownable {
+contract EntityRegistry is IEntityRegistry, Ownable {
 
     // -------------------------------------------------------------------------
     // State
@@ -115,7 +115,7 @@ contract CanonicalRegistry is ICanonicalRegistry, Ownable {
     ///         Anyone may call this. The account is not required to exist for funding;
     ///         it only needs to be deployed before the owner interacts with it.
     function deployAccount(bytes32 id) public returns (address account) {
-        require(predictAddress(id).code.length == 0, "CanonicalRegistry: account already deployed");
+        require(predictAddress(id).code.length == 0, "EntityRegistry: account already deployed");
         account = address(new BeaconProxy{salt: id}(address(beacon), _accountInitData(id)));
         emit AccountDeployed(id, account);
     }
@@ -132,11 +132,11 @@ contract CanonicalRegistry is ICanonicalRegistry, Ownable {
         bytes calldata proof
     ) external {
         bytes32 id = toId(namespace, canonicalString);
-        require(ownerOf(id) == address(0), "CanonicalRegistry: already claimed");
+        require(ownerOf(id) == address(0), "EntityRegistry: already claimed");
 
         address verifier = verifiers[keccak256(bytes(namespace))];
-        require(verifier != address(0), "CanonicalRegistry: no verifier for namespace");
-        require(IVerifier(verifier).verify(id, msg.sender, proof), "CanonicalRegistry: invalid proof");
+        require(verifier != address(0), "EntityRegistry: no verifier for namespace");
+        require(IVerifier(verifier).verify(id, msg.sender, proof), "EntityRegistry: invalid proof");
 
         if (aliases[id] != bytes32(0)) {
             delete aliases[id];
@@ -160,14 +160,14 @@ contract CanonicalRegistry is ICanonicalRegistry, Ownable {
     ///         All-or-nothing: any invalid alias reverts the entire transaction.
     ///         Funds in each identifier's account remain separate; all controlled by the same owner.
     function linkIds(bytes32 primaryId, bytes32[] calldata aliasIds) external {
-        require(owners[primaryId] == msg.sender, "CanonicalRegistry: not owner of primary");
-        require(aliases[primaryId] == bytes32(0), "CanonicalRegistry: primary is itself an alias");
+        require(owners[primaryId] == msg.sender, "EntityRegistry: not owner of primary");
+        require(aliases[primaryId] == bytes32(0), "EntityRegistry: primary is itself an alias");
 
         for (uint256 i = 0; i < aliasIds.length; i++) {
             bytes32 aliasId = aliasIds[i];
-            require(aliasId != primaryId, "CanonicalRegistry: cannot link to self");
-            require(owners[aliasId] == msg.sender, "CanonicalRegistry: not owner of alias");
-            require(aliases[aliasId] == bytes32(0), "CanonicalRegistry: alias already linked");
+            require(aliasId != primaryId, "EntityRegistry: cannot link to self");
+            require(owners[aliasId] == msg.sender, "EntityRegistry: not owner of alias");
+            require(aliases[aliasId] == bytes32(0), "EntityRegistry: alias already linked");
 
             aliases[aliasId] = primaryId;
             delete owners[aliasId];
@@ -181,11 +181,11 @@ contract CanonicalRegistry is ICanonicalRegistry, Ownable {
     ///         Only callable by the current owner of the primary.
     ///         All-or-nothing: any invalid alias reverts the entire transaction.
     function unlinkIds(bytes32 primaryId, bytes32[] calldata aliasIds) external {
-        require(owners[primaryId] == msg.sender, "CanonicalRegistry: not owner of primary");
+        require(owners[primaryId] == msg.sender, "EntityRegistry: not owner of primary");
 
         for (uint256 i = 0; i < aliasIds.length; i++) {
             bytes32 aliasId = aliasIds[i];
-            require(aliases[aliasId] == primaryId, "CanonicalRegistry: not an alias of this primary");
+            require(aliases[aliasId] == primaryId, "EntityRegistry: not an alias of this primary");
 
             delete aliases[aliasId];
             owners[aliasId] = msg.sender;
@@ -210,8 +210,8 @@ contract CanonicalRegistry is ICanonicalRegistry, Ownable {
         string calldata canonicalString
     ) external {
         bytes32 id = toId(namespace, canonicalString);
-        require(aliases[id] == bytes32(0), "CanonicalRegistry: cannot revoke an alias");
-        require(owners[id] == msg.sender, "CanonicalRegistry: not owner");
+        require(aliases[id] == bytes32(0), "EntityRegistry: cannot revoke an alias");
+        require(owners[id] == msg.sender, "EntityRegistry: not owner");
         address previous = owners[id];
         delete owners[id];
         emit Revoked(id, namespace, canonicalString, previous);

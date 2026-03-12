@@ -1,11 +1,11 @@
 ---
-title: Canonical Registry
+title: Entity Registry
 description: Map off-chain identifiers to Ethereum addresses — permissionlessly fund any GitHub repo or DNS domain before it's even claimed
 ---
 
-# Canonical Registry
+# Entity Registry
 
-The **Canonical Registry** maps off-chain identifiers (GitHub repositories, DNS domains) to Ethereum addresses. Anyone can send ERC-20 tokens to a deterministic deposit address for any identifier — even before the owner has claimed it. When the owner proves ownership, they control the identity account and can execute arbitrary calls through it.
+The **Entity Registry** maps off-chain identifiers (GitHub repositories, DNS domains) to Ethereum addresses. Anyone can send ERC-20 tokens to a deterministic deposit address for any identifier — even before the owner has claimed it. When the owner proves ownership, they control the identity account and can execute arbitrary calls through it.
 
 ## How It Works
 
@@ -21,7 +21,7 @@ The **Canonical Registry** maps off-chain identifiers (GitHub repositories, DNS 
   Owner proves GitHub/DNS ownership
              │
              ▼
-  CanonicalRegistry records owner
+  EntityRegistry records owner
              │
              ▼
   execute(target, data, value) → interact with any contract
@@ -45,9 +45,9 @@ The **Canonical Registry** maps off-chain identifiers (GitHub repositories, DNS 
 ### SDK Setup
 
 ```typescript
-import { CanonicalRegistrySDK } from '@ethereum-canonical-registry/sdk';
+import { EntityRegistrySDK } from '@ethereum-entity-registry/sdk';
 
-const sdk = new CanonicalRegistrySDK(walletClient);
+const sdk = new EntityRegistrySDK(walletClient);
 ```
 
 Supported chains: `31337` (Hardhat), `11155111` (Sepolia), `1` (Mainnet — planned).
@@ -100,7 +100,7 @@ await sdk.account.execute(state.depositAddress, call.target, call.data);
 ### Parse URLs
 
 ```typescript
-import { parseUrl } from '@ethereum-canonical-registry/sdk';
+import { parseUrl } from '@ethereum-entity-registry/sdk';
 
 parseUrl('https://github.com/org/repo');
 // → { namespace: "github", canonicalString: "org/repo", formatted: "github:org/repo" }
@@ -111,17 +111,17 @@ parseUrl('example.com');
 
 ### React Hooks
 
-Wrap your app with `CanonicalRegistryProvider`, then use hooks:
+Wrap your app with `EntityRegistryProvider`, then use hooks:
 
 ```tsx
 import {
-  CanonicalRegistryProvider,
+  EntityRegistryProvider,
   useIdentifier,
   useClaim,
-} from '@ethereum-canonical-registry/sdk';
+} from '@ethereum-entity-registry/sdk';
 
 function App() {
-  return <CanonicalRegistryProvider>{/* ... */}</CanonicalRegistryProvider>;
+  return <EntityRegistryProvider>{/* ... */}</EntityRegistryProvider>;
 }
 
 function IdentifierCard({ id }: { id: `0x${string}` }) {
@@ -140,15 +140,15 @@ function IdentifierCard({ id }: { id: `0x${string}` }) {
 ## Monorepo Structure
 
 ```
-ethereum-canonical-registry/
+ethereum-entity-registry/
 ├── apps/
-│   ├── web/          # Next.js frontend (@ethereum-canonical-registry/web)
+│   ├── web/          # Next.js frontend (@ethereum-entity-registry/web)
 │   └── docs/         # Fumadocs documentation site
 ├── packages/
-│   ├── contracts/    # Solidity smart contracts — Hardhat (@ethereum-canonical-registry/contracts)
-│   ├── indexer/      # Ponder event indexer (@ethereum-canonical-registry/indexer)
-│   ├── sdk/          # TypeScript SDK + React hooks (@ethereum-canonical-registry/sdk)
-│   └── ui/           # Shared Shadcn UI components (@ethereum-canonical-registry/ui)
+│   ├── contracts/    # Solidity smart contracts — Hardhat (@ethereum-entity-registry/contracts)
+│   ├── indexer/      # Ponder event indexer (@ethereum-entity-registry/indexer)
+│   ├── sdk/          # TypeScript SDK + React hooks (@ethereum-entity-registry/sdk)
+│   └── ui/           # Shared Shadcn UI components (@ethereum-entity-registry/ui)
 └── package.json      # pnpm workspaces + Turborepo
 ```
 

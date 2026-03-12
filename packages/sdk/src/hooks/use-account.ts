@@ -1,6 +1,6 @@
 "use client";
 
-import { useCanonicalRegistrySDK } from "../components/provider";
+import { useEntityRegistrySDK } from "../components/provider";
 import { useMutation, type UseMutationOptions } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { Address } from "viem";
@@ -13,7 +13,7 @@ export function useExecute(
     { accountAddress: Address; target: Address; data: `0x${string}`; value?: bigint }
   >,
 ) {
-  const { sdk } = useCanonicalRegistrySDK();
+  const { sdk } = useEntityRegistrySDK();
   const invalidate = useInvalidate();
 
   return useMutation({

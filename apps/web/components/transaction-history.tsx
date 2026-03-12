@@ -10,12 +10,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@ethereum-canonical-registry/ui/components/table";
+} from "@ethereum-entity-registry/ui/components/table";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@ethereum-canonical-registry/ui/components/tooltip";
+} from "@ethereum-entity-registry/ui/components/tooltip";
 
 import { TokenAmount } from "@/components/token-amount";
 import { USDAmount } from "@/components/amount";

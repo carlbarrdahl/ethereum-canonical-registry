@@ -1,6 +1,6 @@
 ---
 title: Integration Guide
-description: How to use the Canonical Registry as a funder, on-chain consumer, distribution protocol, or registrant
+description: How to use the Entity Registry as a funder, on-chain consumer, distribution protocol, or registrant
 ---
 
 # Integration Guide
@@ -12,9 +12,9 @@ The registry serves different roles depending on who you are. This page covers i
 You don't need to know the registry exists. Compute the deposit address for any identifier and transfer tokens directly to it — before or after the identifier is claimed.
 
 ```ts
-import { CanonicalRegistrySDK } from "@ethereum-canonical-registry/sdk";
+import { EntityRegistrySDK } from "@ethereum-entity-registry/sdk";
 
-const sdk = new CanonicalRegistrySDK();
+const sdk = new EntityRegistrySDK();
 const { depositAddress } = await sdk.registry.resolve("github.com/org/repo");
 
 await token.transfer(depositAddress, amount);
@@ -27,10 +27,10 @@ Funds accumulate at the deposit address until the identifier's owner claims and 
 The minimal interface for smart contracts that need to resolve identifiers:
 
 ```solidity
-import {ICanonicalRegistry} from "@ethereum-canonical-registry/contracts/contracts/ICanonicalRegistry.sol";
+import {IEntityRegistry} from "@ethereum-entity-registry/contracts/contracts/IEntityRegistry.sol";
 
 bytes32 id = keccak256(abi.encode("github", "org/repo"));
-address owner = ICanonicalRegistry(registry).ownerOf(id);
+address owner = IEntityRegistry(registry).ownerOf(id);
 
 if (owner != address(0)) {
     // Identifier is claimed — send directly to owner

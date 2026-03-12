@@ -1,4 +1,4 @@
-import { cn } from "@ethereum-canonical-registry/ui/lib/utils"
+import { cn } from "@ethereum-entity-registry/ui/lib/utils"
 
 function Kbd({ className, ...props }: React.ComponentProps<"kbd">) {
   return (

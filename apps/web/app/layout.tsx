@@ -1,6 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 
-import "@ethereum-canonical-registry/ui/globals.css";
+import "@ethereum-entity-registry/ui/globals.css";
 import { Providers } from "@/components/providers";
 import { Metadata } from "next";
 import { Header } from "@/components/header";
@@ -20,8 +20,8 @@ const fontMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://canonical.registry"),
   title: {
-    default: "Canonical Registry — Off-chain entity registry",
-    template: "%s | Canonical Registry",
+    default: "Entity Registry — Off-chain entity registry",
+    template: "%s | Entity Registry",
   },
   description:
     "Send ERC-20 tokens to any GitHub repository or DNS domain. Funds accumulate at a deterministic deposit address until the owner claims them.",
@@ -33,12 +33,12 @@ export const metadata: Metadata = {
     "github",
     "canonical registry",
   ],
-  authors: [{ name: "Canonical Registry" }],
+  authors: [{ name: "Entity Registry" }],
   openGraph: {
     type: "website",
     locale: "en_US",
-    siteName: "Canonical Registry",
-    title: "Canonical Registry — Fund any GitHub repo or domain",
+    siteName: "Entity Registry",
+    title: "Entity Registry — Fund any GitHub repo or domain",
     description:
       "Send ERC-20 tokens to any GitHub repository or DNS domain. Funds accumulate at a deterministic deposit address until the owner claims them.",
   },

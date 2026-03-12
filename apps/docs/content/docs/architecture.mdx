@@ -11,7 +11,7 @@ description: System design, capital flows, security model, and technical decisio
 ┌──────────────────────────────────────────────────────────────────────┐
 │                          ON-CHAIN                                    │
 │                                                                      │
-│  CanonicalRegistry                                                   │
+│  EntityRegistry                                                   │
 │       │                                                              │
 │       ├── verifiers[namespace] ──▶ DnsVerifier / GitHubVerifier     │
 │       │                              (OracleVerifier base)           │
@@ -37,7 +37,7 @@ description: System design, capital flows, security model, and technical decisio
 
 | Contract              | Purpose                                                             | Pattern                    |
 | --------------------- | ------------------------------------------------------------------- | -------------------------- |
-| **CanonicalRegistry** | Manages identifier ownership, account deployment, verifier registry | Ownable singleton          |
+| **EntityRegistry** | Manages identifier ownership, account deployment, verifier registry | Ownable singleton          |
 | **IdentityAccount**   | Per-identifier smart account; owner can `execute` arbitrary calls   | BeaconProxy per identifier |
 | **UpgradeableBeacon** | Points all account proxies to the current implementation            | OZ beacon                  |
 | **OracleVerifier**    | Base EIP-712 verifier using a trusted backend signer                | Abstract base              |
@@ -50,8 +50,8 @@ description: System design, capital flows, security model, and technical decisio
 | ------------------------------------------------ | -------------------------------------------------------------------------- |
 | **Oracle backend**                               | Confirms off-chain ownership (DNS TXT, GitHub OAuth), signs EIP-712 proofs |
 | **Indexer** (Ponder)                             | Processes contract events, exposes queryable state via GraphQL + REST      |
-| **SDK** (`@ethereum-canonical-registry/sdk`)     | TypeScript client for contracts and indexer, React hooks, pure utils       |
-| **Web App** (`@ethereum-canonical-registry/web`) | Next.js frontend                                                           |
+| **SDK** (`@ethereum-entity-registry/sdk`)     | TypeScript client for contracts and indexer, React hooks, pure utils       |
+| **Web App** (`@ethereum-entity-registry/web`) | Next.js frontend                                                           |
 
 ---
 
