@@ -6,9 +6,10 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts",
-    "dev": "tsup src/index.ts --watch --format esm --dts",
+    "build": "rm -rf dist && tsup src/index.ts --format esm --dts --external @urql/core",
+    "dev": "tsup src/index.ts --watch --format esm --dts --external @urql/core",
     "check-types": "tsc --noEmit",
+    "prepublishOnly": "bun run build",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -21,9 +22,10 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@ensdomains/ensjs": "^4.2.2",
-    "@urql/core": "^6.0.1",
-    "@ethereum-entity-registry/contracts": "workspace:*"
+    "@urql/core": "^6.0.1"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "peerDependencies": {
     "@tanstack/react-query": ">=5.0.0",
@@ -34,6 +36,7 @@
     "wagmi": ">=2.0.0"
   },
   "devDependencies": {
+    "@ethereum-entity-registry/contracts": "workspace:*",
     "@types/react": "^19.2.13",
     "@types/react-dom": "^19.2.3",
     "tsup": "^8.5.1",

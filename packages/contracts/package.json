@@ -21,6 +21,10 @@
     "deploy:base-sepolia": "bun run build && bun x hardhat ignition deploy ignition/modules/Registry.base-sepolia.ts --network base-sepolia --parameters ignition/parameters/base-sepolia.json && bun run generate-abi",
     "deploy:base": "bun run build && bun x hardhat ignition deploy ignition/modules/Registry.production.ts --network base --parameters ignition/parameters/base.json && bun run generate-abi",
     "deploy:mainnet": "bun run build && bun x hardhat ignition deploy ignition/modules/Registry.production.ts --network mainnet --parameters ignition/parameters/mainnet.json && bun run generate-abi",
+    "verify:sepolia": "bun x hardhat ignition verify chain-11155111 --network sepolia",
+    "verify:base-sepolia": "bun x hardhat ignition verify chain-84532 --network base-sepolia",
+    "verify:base": "bun x hardhat ignition verify chain-8453 --network base",
+    "verify:mainnet": "bun x hardhat ignition verify chain-1 --network mainnet",
     "seed": "bun run scripts/seed.ts",
     "generate-abi": "bun run scripts/generate-abi.ts",
     "verify-ens": "bun run scripts/verify-ens.ts",
@@ -34,7 +38,7 @@
     "@types/node": "^22.8.5",
     "forge-std": "github:foundry-rs/forge-std#v1.9.4",
     "hardhat": "^3.1.5",
-    "typescript": "~5.8.0",
+    "typescript": "~5.9.0",
     "viem": "^2.43.0"
   },
   "dependencies": {

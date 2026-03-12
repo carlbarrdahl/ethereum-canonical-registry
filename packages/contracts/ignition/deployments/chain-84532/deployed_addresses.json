@@ -1,9 +1,9 @@
 {
-  "DeployModule#IdentityAccount": "0xB7E7c564Bf3d4742140bc48484F83A8019E857B4",
-  "TestTokens#TokenDAI": "0xfa7D7ffb095d8cCe55B64498A1fdD871B1006Bb7",
-  "TestTokens#TokenUSDC": "0x13F06A8b6db91946B8d00B7f4346CEF406828dbB",
-  "TestTokens#TokenWETH": "0xbbb07fd26BbcececE81B05741C2c43f9372B3023",
-  "DeployModule#CanonicalRegistry": "0x94878f6Beae2EE5DfedA27442F201244f07a265E",
-  "DeployModule#DnsVerifier": "0x8B4f058fd0de52b2AAEA1F52D2fe3684c14A05A0",
-  "DeployModule#GitHubVerifier": "0x22222E257aD4Cd8897Ab338036322B1f6bd334D5"
+  "DeployModule#IdentityAccount": "0xC488d223B6FfdeE8855D3Ba7b4994175b4d5cFd0",
+  "TestTokens#TokenDAI": "0x7EE901005B26b7e3700af367F763AA9090485Ba7",
+  "TestTokens#TokenUSDC": "0x56c530092b2dBb007b896db514B14F029604E424",
+  "TestTokens#TokenWETH": "0x1CE46e82E835dd4F1c519Bf09951887Ee6de0957",
+  "DeployModule#EntityRegistry": "0x081a5907ab0A77fCc84cf217B62730b9341Ee687",
+  "DeployModule#DnsVerifier": "0xD1AF4F708289FB114eaF3a880e94B185618b4144",
+  "DeployModule#GitHubVerifier": "0xefaa6Be4FD67fBF0F471258A93E112570CB09F7F"
 }
