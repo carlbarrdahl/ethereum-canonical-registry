@@ -24,8 +24,7 @@ const sdk = new EntityRegistrySDK();
 // Accepts URLs, namespace:value, or domain names
 const state = await sdk.registry.resolve("github.com/org/repo");
 // state.id             — bytes32 identifier
-// state.depositAddress — where funders should send tokens
-// state.owner          — null if unclaimed
+// state.depositAddress — where funders should send tokens (computed locally, no RPC)
 
 // Pass a token address to also fetch the balance
 const state = await sdk.registry.resolve("github.com/org/repo", tokenAddress);

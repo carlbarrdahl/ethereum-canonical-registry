@@ -12,7 +12,6 @@ import { canonicalise, toId, resolveDepositAddress, parseAnyIdentifier } from ".
 export type IdentifierState = {
   id: `0x${string}`;
   depositAddress: Address;
-  owner: Address | null;
   balance: bigint | null;
 };
 
@@ -64,28 +63,18 @@ export function createRegistryMethods(
           client: { public: publicClient },
         }) as any).read.predictAddress([id]);
 
-    const registryContract = getContract({
-      address: registryAddress,
-      abi: registryAbi,
-      client: { public: publicClient },
-    });
-
-    const [ownerRaw, balance] = await Promise.all([
-      (registryContract as any).read.ownerOf([id]) as Promise<Address>,
-      token
-        ? publicClient.readContract({
-            address: token,
-            abi: erc20Abi,
-            functionName: "balanceOf",
-            args: [depositAddress],
-          })
-        : Promise.resolve(null),
-    ]);
+    const balance = token
+      ? await publicClient.readContract({
+          address: token,
+          abi: erc20Abi,
+          functionName: "balanceOf",
+          args: [depositAddress],
+        })
+      : null;
 
     return {
       id,
       depositAddress,
-      owner: ownerRaw === zeroAddress ? null : ownerRaw,
       balance,
     };
   }
@@ -246,13 +235,12 @@ export function createRegistryMethods(
     },
 
     /**
-     * Resolve the full state of an identifier: owner, deposit address, and
-     * ERC-20 balance — all in a single parallel batch of RPC calls.
+     * Resolve the deposit address and optional ERC-20 balance for an identifier.
+     * The deposit address is computed locally (no RPC). Balance requires one RPC call.
      *
      * @example
      * const state = await sdk.registry.resolveIdentifier("github", "org/repo", tokenAddress)
      * // state.depositAddress — where funders should send tokens
-     * // state.owner          — null if unclaimed
      * // state.balance        — claimable token balance at the deposit address
      */
     resolveIdentifier: (
@@ -262,7 +250,7 @@ export function createRegistryMethods(
     ): Promise<IdentifierState> => resolveById(namespace, rawCanonicalString, token),
 
     /**
-     * Resolve any free-form identifier string to its on-chain state.
+     * Resolve any free-form identifier string to its deposit address and optional balance.
      * Accepts namespace:value, URLs, and domain names.
      *
      * @example

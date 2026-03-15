@@ -18,6 +18,7 @@ import {
 
 import {
   useEntityRegistrySDK,
+  useOwnerOf,
   getTokens,
   isNativeToken,
   parseUrl,
@@ -98,6 +99,8 @@ export default function Page() {
   });
 
   const state = identifierQuery.data;
+  const ownerQuery = useOwnerOf(state?.id);
+  const owner = ownerQuery.data ?? null;
   const selectedTokenConfig = tokens.find((t) => t.address === selectedToken);
   const transfer = useTransfer();
   const tokenInfo = useToken(selectedToken, account);
@@ -258,11 +261,11 @@ export default function Page() {
             <p className="text-xs uppercase tracking-wider font-medium text-muted-foreground">
               Owner
             </p>
-            {identifierQuery.isPending ? (
+            {identifierQuery.isPending || ownerQuery.isPending ? (
               <div className="h-5 w-1/2 bg-muted rounded animate-pulse" />
             ) : state ? (
-              state.owner ? (
-                <p className="font-mono text-sm break-all">{state.owner}</p>
+              owner ? (
+                <p className="font-mono text-sm break-all">{owner}</p>
               ) : (
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
@@ -350,7 +353,7 @@ export default function Page() {
           </div>
 
           {/* Owner actions — only when the connected wallet is the owner */}
-          {state?.owner && account && state.owner.toLowerCase() === account.toLowerCase() && (
+          {owner && account && owner.toLowerCase() === account.toLowerCase() && (
             <ExecuteActions
               state={state}
               token={selectedToken!}
