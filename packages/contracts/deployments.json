@@ -2141,7 +2141,7 @@
   },
   "84532": {
     "IdentityAccount": {
-      "address": "0xB7E7c564Bf3d4742140bc48484F83A8019E857B4",
+      "address": "0xC488d223B6FfdeE8855D3Ba7b4994175b4d5cFd0",
       "abi": [
         {
           "inputs": [],
@@ -2236,7 +2236,7 @@
           "name": "registry",
           "outputs": [
             {
-              "internalType": "contract ICanonicalRegistry",
+              "internalType": "contract IEntityRegistry",
               "name": "",
               "type": "address"
             }
@@ -2249,10 +2249,10 @@
           "type": "receive"
         }
       ],
-      "startBlock": 38736655
+      "startBlock": 38771786
     },
     "TokenDAI": {
-      "address": "0xfa7D7ffb095d8cCe55B64498A1fdD871B1006Bb7",
+      "address": "0x7EE901005B26b7e3700af367F763AA9090485Ba7",
       "abi": [
         {
           "inputs": [
@@ -2602,10 +2602,10 @@
           "type": "function"
         }
       ],
-      "startBlock": 38736655
+      "startBlock": 38771789
     },
     "TokenUSDC": {
-      "address": "0x13F06A8b6db91946B8d00B7f4346CEF406828dbB",
+      "address": "0x56c530092b2dBb007b896db514B14F029604E424",
       "abi": [
         {
           "inputs": [
@@ -2955,10 +2955,10 @@
           "type": "function"
         }
       ],
-      "startBlock": 38736655
+      "startBlock": 38771791
     },
     "TokenWETH": {
-      "address": "0xbbb07fd26BbcececE81B05741C2c43f9372B3023",
+      "address": "0x1CE46e82E835dd4F1c519Bf09951887Ee6de0957",
       "abi": [
         {
           "inputs": [
@@ -3308,10 +3308,10 @@
           "type": "function"
         }
       ],
-      "startBlock": 38736656
+      "startBlock": 38771792
     },
-    "CanonicalRegistry": {
-      "address": "0x94878f6Beae2EE5DfedA27442F201244f07a265E",
+    "EntityRegistry": {
+      "address": "0x081a5907ab0A77fCc84cf217B62730b9341Ee687",
       "abi": [
         {
           "inputs": [
@@ -3820,10 +3820,10 @@
           "type": "function"
         }
       ],
-      "startBlock": 38736661
+      "startBlock": 38771797
     },
     "DnsVerifier": {
-      "address": "0x8B4f058fd0de52b2AAEA1F52D2fe3684c14A05A0",
+      "address": "0xD1AF4F708289FB114eaF3a880e94B185618b4144",
       "abi": [
         {
           "inputs": [
@@ -4048,10 +4048,10 @@
           "type": "function"
         }
       ],
-      "startBlock": 38736666
+      "startBlock": 38771803
     },
     "GitHubVerifier": {
-      "address": "0x22222E257aD4Cd8897Ab338036322B1f6bd334D5",
+      "address": "0xefaa6Be4FD67fBF0F471258A93E112570CB09F7F",
       "abi": [
         {
           "inputs": [
@@ -4276,7 +4276,7 @@
           "type": "function"
         }
       ],
-      "startBlock": 38736666
+      "startBlock": 38771831
     }
   },
   "11155111": {

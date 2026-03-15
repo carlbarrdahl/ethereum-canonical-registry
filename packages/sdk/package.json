@@ -1,7 +1,15 @@
 {
   "name": "@ethereum-entity-registry/sdk",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "type": "module",
+  "description": "TypeScript SDK and React hooks for the Ethereum Entity Registry",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/carlbarrdahl/ethereum-canonical-registry",
+    "directory": "packages/sdk"
+  },
+  "homepage": "https://github.com/carlbarrdahl/ethereum-canonical-registry#readme",
+  "keywords": ["ethereum", "registry", "identity", "github", "dns", "viem", "wagmi"],
   "files": [
     "dist"
   ],

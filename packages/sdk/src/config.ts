@@ -16,7 +16,7 @@ export const config: Record<SupportedChainId, ChainConfig> = {
     indexer: "http://localhost:42069/graphql",
   },
   [sepolia.id]: {
-    registry: deployments["11155111"]?.EntityRegistry
+    registry: (deployments["11155111"]?.EntityRegistry ?? deployments["11155111"]?.CanonicalRegistry)
       ?.address as `0x${string}`,
     indexer: "https://canonical-registry-production.up.railway.app/graphql",
   },
@@ -24,7 +24,7 @@ export const config: Record<SupportedChainId, ChainConfig> = {
     indexer: "http://localhost:42069/graphql",
   },
   [baseSepolia.id]: {
-    registry: deployments["84532"]?.CanonicalRegistry?.address as `0x${string}`,
+    registry: deployments["84532"]?.EntityRegistry?.address as `0x${string}`,
     indexer: "http://localhost:42069/graphql",
   },
   [hardhat.id]: {
