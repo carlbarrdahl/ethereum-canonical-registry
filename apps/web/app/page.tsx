@@ -74,7 +74,7 @@ export default function Page() {
   const [copied, setCopied] = useState(false);
 
   const chainId = useChainId();
-  const tokens = getTokens(chainId).filter((t) => !isNativeToken(t.address));
+  const tokens = getTokens(chainId)
   const [selectedToken, setSelectedToken] = useState<Address | undefined>(
     tokens[0]?.address,
   );
