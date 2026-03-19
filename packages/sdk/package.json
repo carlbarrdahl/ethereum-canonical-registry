@@ -1,6 +1,6 @@
 {
   "name": "@ethereum-entity-registry/sdk",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "type": "module",
   "description": "TypeScript SDK and React hooks for the Ethereum Entity Registry",
   "repository": {
