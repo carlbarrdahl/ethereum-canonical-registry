@@ -9,7 +9,7 @@ import { type Abi, parseAbiItem } from "viem";
 import { hardhat, sepolia, baseSepolia, mainnet } from "viem/chains";
 import { http } from "viem";
 
-import deployments from "@ethereum-entity-registry/contracts/deployments.json";
+import deployments from "./deployments.json";
 
 const isDev = process.env.NODE_ENV === "development";
 

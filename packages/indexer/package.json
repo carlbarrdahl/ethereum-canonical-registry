@@ -15,8 +15,6 @@
   },
   "dependencies": {
     "@urql/core": "^6.0.1",
-    "@ethereum-entity-registry/contracts": "workspace:*",
-    "@ethereum-entity-registry/sdk": "workspace:*",
     "hono": "^4.5.0",
     "node-fetch-cache": "^5.1.0",
     "p-retry": "^7.1.1",
@@ -31,6 +29,6 @@
     "vitest": "^4.0.18"
   },
   "engines": {
-    "node": ">=18.14"
+    "node": ">=22"
   }
 }
