@@ -263,12 +263,6 @@ importers:
 
   packages/indexer:
     dependencies:
-      '@ethereum-entity-registry/contracts':
-        specifier: workspace:*
-        version: link:../contracts
-      '@ethereum-entity-registry/sdk':
-        specifier: workspace:*
-        version: link:../sdk
       '@urql/core':
         specifier: ^6.0.1
         version: 6.0.1(graphql@16.8.2)
