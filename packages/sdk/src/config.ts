@@ -13,19 +13,19 @@ export type ChainConfig = {
 
 export const config: Record<SupportedChainId, ChainConfig> = {
   [mainnet.id]: {
-    indexer: "http://localhost:42069/graphql",
+    indexer: "https://ethereum-entity-registry-production.up.railway.app/graphql",
   },
   [sepolia.id]: {
     registry: (deployments["11155111"]?.EntityRegistry ?? deployments["11155111"]?.CanonicalRegistry)
       ?.address as `0x${string}`,
-    indexer: "https://canonical-registry-production.up.railway.app/graphql",
+    indexer: "https://ethereum-entity-registry-production.up.railway.app/graphql",
   },
   [base.id]: {
-    indexer: "http://localhost:42069/graphql",
+    indexer: "https://ethereum-entity-registry-production.up.railway.app/graphql",
   },
   [baseSepolia.id]: {
     registry: deployments["84532"]?.EntityRegistry?.address as `0x${string}`,
-    indexer: "http://localhost:42069/graphql",
+    indexer: "https://ethereum-entity-registry-production.up.railway.app/graphql",
   },
   [hardhat.id]: {
     registry: deployments[31337]?.EntityRegistry?.address as `0x${string}`,
