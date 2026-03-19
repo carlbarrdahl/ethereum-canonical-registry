@@ -93,6 +93,7 @@ function getTestnetTokens(chainId: string): ChainTokens {
 const TOKEN_CONFIG: Record<number, ChainTokens> = {
   1: MAINNET_TOKENS,
   11155111: getTestnetTokens("11155111"), // Sepolia
+  84532: getTestnetTokens("84532"), // Base Sepolia
   31337: getTestnetTokens("31337"), // Local
 };
 
