@@ -58,9 +58,9 @@ const config = createConfig({
   },
 });
 
-export function Providers({ children }: PropsWithChildren) {
-  const queryClient = new QueryClient();
+const queryClient = new QueryClient();
 
+export function Providers({ children }: PropsWithChildren) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
