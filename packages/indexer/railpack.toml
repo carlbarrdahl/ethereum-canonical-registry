@@ -1,0 +1,8 @@
+[build]
+nixpacks_version = "1.25.0"
+
+[phases.setup]
+cmds = ["pnpm install --frozen-lockfile"]
+
+[phases.build]
+cmds = []
