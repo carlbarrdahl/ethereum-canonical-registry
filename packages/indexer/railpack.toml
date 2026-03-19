@@ -1,7 +1,6 @@
 [options]
-installCommand = "pnpm install --frozen-lockfile"
-buildCommand = "pnpm --filter @ethereum-entity-registry/indexer... build"
-startCommand = "pnpm --filter @ethereum-entity-registry/indexer start"
+build_command = ""
+start_command = "pnpm start"
 
-[options.environment]
-NODE_VERSION = "22"
+[providers.node]
+version = "22"
