@@ -25,8 +25,12 @@ export type { IdentifierState } from "./registry";
 type ChainDeployments = (typeof deployments)["31337"];
 
 function getDeployments(chainId: SupportedChainId): ChainDeployments {
-  const d = deployments[chainId.toString() as keyof typeof deployments];
+  const d = deployments[chainId.toString() as keyof typeof deployments] as Record<string, unknown>;
   if (!d) throw new Error(`Chain ${chainId} not supported`);
+  // Normalize legacy "CanonicalRegistry" name to "EntityRegistry"
+  if (!d.EntityRegistry && d.CanonicalRegistry) {
+    d.EntityRegistry = d.CanonicalRegistry;
+  }
   return d as ChainDeployments;
 }
 

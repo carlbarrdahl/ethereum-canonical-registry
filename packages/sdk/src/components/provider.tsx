@@ -28,9 +28,7 @@ export function EntityRegistryProvider<T extends EntityRegistrySDK = EntityRegis
   client,
   defaultChain,
 }: EntityRegistryProviderProps<T>): React.ReactNode {
-  const [sdk, setSdk] = useState<EntityRegistrySDK | null>(() => {
-    return new EntityRegistrySDK(client, defaultChain);
-  });
+  const [sdk, setSdk] = useState<EntityRegistrySDK | null>(null);
 
   useEffect(() => {
     setSdk(new EntityRegistrySDK(client, defaultChain));

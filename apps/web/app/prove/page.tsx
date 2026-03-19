@@ -124,11 +124,10 @@ function useRegistryAddress() {
   const effectiveChainId = (
     sdk?.chainId ?? chainId
   ).toString() as keyof typeof deployments;
-  const d = deployments[effectiveChainId];
-  return d
-    ? (d as { EntityRegistry: { address: string } }).EntityRegistry
-        .address
-    : null;
+  const d = deployments[effectiveChainId] as
+    | Partial<Record<"EntityRegistry" | "CanonicalRegistry", { address: string }>>
+    | undefined;
+  return (d?.EntityRegistry ?? d?.CanonicalRegistry)?.address ?? null;
 }
 
 export default function ProvePage() {
