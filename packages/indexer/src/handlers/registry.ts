@@ -7,8 +7,8 @@ import { identifier, identifierAlias } from "ponder:schema";
  * - Clear any stale revokedAt
  */
 ponder.on("EntityRegistry:Claimed", async ({ event, context }) => {
-  const { db, network } = context;
-  const { chainId } = network;
+  const { db, chain } = context;
+  const chainId = chain.id;
   const { id, namespace, canonicalString, owner } = event.args;
 
   await db
@@ -36,8 +36,8 @@ ponder.on("EntityRegistry:Claimed", async ({ event, context }) => {
  * - Clear owner, set revokedAt
  */
 ponder.on("EntityRegistry:Revoked", async ({ event, context }) => {
-  const { db, network } = context;
-  const { chainId } = network;
+  const { db, chain } = context;
+  const chainId = chain.id;
   const { id } = event.args;
 
   await db.update(identifier, { chainId, id }).set({
@@ -51,8 +51,8 @@ ponder.on("EntityRegistry:Revoked", async ({ event, context }) => {
  * - Create alias row
  */
 ponder.on("EntityRegistry:Linked", async ({ event, context }) => {
-  const { db, network } = context;
-  const { chainId } = network;
+  const { db, chain } = context;
+  const chainId = chain.id;
   const { aliasId, primaryId } = event.args;
 
   await db
@@ -74,8 +74,8 @@ ponder.on("EntityRegistry:Linked", async ({ event, context }) => {
  * - Delete alias row
  */
 ponder.on("EntityRegistry:Unlinked", async ({ event, context }) => {
-  const { db, network } = context;
-  const { chainId } = network;
+  const { db, chain } = context;
+  const chainId = chain.id;
   const { aliasId, primaryId } = event.args;
 
   await db.delete(identifierAlias, {
@@ -90,8 +90,8 @@ ponder.on("EntityRegistry:Unlinked", async ({ event, context }) => {
  * - Create identifier row if not yet present (account can be deployed before claim)
  */
 ponder.on("EntityRegistry:AccountDeployed", async ({ event, context }) => {
-  const { db, network } = context;
-  const { chainId } = network;
+  const { db, chain } = context;
+  const chainId = chain.id;
   const { id, account } = event.args;
 
   await db
