@@ -5,7 +5,7 @@ import { createConfig, http, useWalletClient, WagmiProvider } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { EntityRegistryProvider } from "@ethereum-entity-registry/sdk";
-import { hardhat, sepolia } from "viem/chains";
+import { hardhat, sepolia, baseSepolia } from "viem/chains";
 import { Toaster } from "@ethereum-entity-registry/ui/components/sonner";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import {
@@ -47,7 +47,7 @@ const connectors = connectorsForWallets(
 const isDev = process.env.NODE_ENV === "development";
 export const defaultChain = isDev ? hardhat : sepolia;
 const config = createConfig({
-  chains: isDev ? [hardhat, sepolia] : [sepolia],
+  chains: isDev ? [hardhat, sepolia, baseSepolia] : [sepolia, baseSepolia],
   connectors,
   defaultChain,
   transports: {
