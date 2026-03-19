@@ -45,15 +45,18 @@ const connectors = connectorsForWallets(
   },
 );
 const isDev = process.env.NODE_ENV === "development";
-export const defaultChain = isDev ? hardhat : sepolia;
+export const defaultChain = isDev ? hardhat : baseSepolia;
 const config = createConfig({
-  chains: isDev ? [hardhat, sepolia, baseSepolia] : [sepolia, baseSepolia],
+  chains: isDev ? [hardhat, baseSepolia] : [baseSepolia],
   connectors,
   defaultChain,
   transports: {
     [hardhat.id]: http(),
     [sepolia.id]: http(
       process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL || "https://rpc.sepolia.org",
+    ),
+    [baseSepolia.id]: http(
+      process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org",
     ),
   },
 });
