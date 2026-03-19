@@ -7,12 +7,14 @@ import { identifier, identifierAlias } from "ponder:schema";
  * - Clear any stale revokedAt
  */
 ponder.on("EntityRegistry:Claimed", async ({ event, context }) => {
-  const { db } = context;
+  const { db, network } = context;
+  const { chainId } = network;
   const { id, namespace, canonicalString, owner } = event.args;
 
   await db
     .insert(identifier)
     .values({
+      chainId,
       id,
       namespace,
       canonicalString,
@@ -34,10 +36,11 @@ ponder.on("EntityRegistry:Claimed", async ({ event, context }) => {
  * - Clear owner, set revokedAt
  */
 ponder.on("EntityRegistry:Revoked", async ({ event, context }) => {
-  const { db } = context;
+  const { db, network } = context;
+  const { chainId } = network;
   const { id } = event.args;
 
-  await db.update(identifier, { id }).set({
+  await db.update(identifier, { chainId, id }).set({
     owner: null,
     revokedAt: event.block.timestamp,
   });
@@ -48,12 +51,14 @@ ponder.on("EntityRegistry:Revoked", async ({ event, context }) => {
  * - Create alias row
  */
 ponder.on("EntityRegistry:Linked", async ({ event, context }) => {
-  const { db } = context;
+  const { db, network } = context;
+  const { chainId } = network;
   const { aliasId, primaryId } = event.args;
 
   await db
     .insert(identifierAlias)
     .values({
+      chainId,
       id: `${aliasId}_${primaryId}`,
       aliasId,
       primaryId,
@@ -69,10 +74,12 @@ ponder.on("EntityRegistry:Linked", async ({ event, context }) => {
  * - Delete alias row
  */
 ponder.on("EntityRegistry:Unlinked", async ({ event, context }) => {
-  const { db } = context;
+  const { db, network } = context;
+  const { chainId } = network;
   const { aliasId, primaryId } = event.args;
 
   await db.delete(identifierAlias, {
+    chainId,
     id: `${aliasId}_${primaryId}`,
   });
 });
@@ -83,12 +90,14 @@ ponder.on("EntityRegistry:Unlinked", async ({ event, context }) => {
  * - Create identifier row if not yet present (account can be deployed before claim)
  */
 ponder.on("EntityRegistry:AccountDeployed", async ({ event, context }) => {
-  const { db } = context;
+  const { db, network } = context;
+  const { chainId } = network;
   const { id, account } = event.args;
 
   await db
     .insert(identifier)
     .values({
+      chainId,
       id,
       namespace: "",
       canonicalString: "",

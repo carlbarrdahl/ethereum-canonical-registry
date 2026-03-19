@@ -1,17 +1,18 @@
-import { index, onchainTable, relations } from "ponder";
+import { index, onchainTable, primaryKey, relations } from "ponder";
 
 // ============================================================================
 // Core Tables
 // ============================================================================
 
 /**
- * Identifier — one row per canonical off-chain identifier (e.g. "github:org/repo")
+ * Identifier — one row per canonical off-chain identifier per chain
  * id = keccak256(abi.encode(namespace, canonicalString))
  */
 export const identifier = onchainTable(
   "identifier",
   (t) => ({
-    id: t.hex().primaryKey(), // bytes32 id
+    chainId: t.integer().notNull(),
+    id: t.hex().notNull(), // bytes32 id
     namespace: t.text().notNull(),
     canonicalString: t.text().notNull(),
     owner: t.hex(), // null = unclaimed / revoked
@@ -21,6 +22,7 @@ export const identifier = onchainTable(
     createdAt: t.bigint().notNull(),
   }),
   (table) => ({
+    pk: primaryKey({ columns: [table.chainId, table.id] }),
     ownerIdx: index().on(table.owner),
     namespaceIdx: index().on(table.namespace),
     accountIdx: index().on(table.accountAddress),
@@ -34,12 +36,14 @@ export const identifier = onchainTable(
 export const identifierAlias = onchainTable(
   "identifier_alias",
   (t) => ({
-    id: t.text().primaryKey(), // `${aliasId}_${primaryId}`
+    chainId: t.integer().notNull(),
+    id: t.text().notNull(), // `${aliasId}_${primaryId}`
     aliasId: t.hex().notNull(),
     primaryId: t.hex().notNull(),
     linkedAt: t.bigint().notNull(),
   }),
   (table) => ({
+    pk: primaryKey({ columns: [table.chainId, table.id] }),
     aliasIdx: index().on(table.aliasId),
     primaryIdx: index().on(table.primaryId),
   }),

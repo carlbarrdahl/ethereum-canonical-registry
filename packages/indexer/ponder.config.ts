@@ -6,7 +6,7 @@ import {
   type ChainConfig,
 } from "ponder";
 import { type Abi, parseAbiItem } from "viem";
-import { hardhat, sepolia, mainnet } from "viem/chains";
+import { hardhat, sepolia, baseSepolia, mainnet } from "viem/chains";
 import { http } from "viem";
 
 import deployments from "@ethereum-entity-registry/contracts/deployments.json";
@@ -14,7 +14,7 @@ import deployments from "@ethereum-entity-registry/contracts/deployments.json";
 const isDev = process.env.NODE_ENV === "development";
 
 const activeChains = {
-  ...(isDev ? { hardhat } : { sepolia }),
+  ...(isDev ? { hardhat } : { sepolia, baseSepolia }),
 };
 
 function getRpcTransport(chainId: number) {
@@ -46,6 +46,34 @@ function getRpcTransport(chainId: number) {
           }),
           rateLimit(http("https://eth-sepolia.api.onfinality.io/public"), {
             requestsPerSecond: 1,
+            browser: false,
+          }),
+        );
+      }
+
+      return providers.length === 1 ? providers[0] : loadBalance(providers);
+    }
+
+    case baseSepolia.id: {
+      const providers = [];
+
+      if (process.env.PONDER_RPC_URL_84532) {
+        providers.push(
+          rateLimit(http(process.env.PONDER_RPC_URL_84532), {
+            requestsPerSecond: 10,
+            browser: false,
+          }),
+        );
+      }
+
+      if (providers.length === 0) {
+        providers.push(
+          rateLimit(http("https://sepolia.base.org"), {
+            requestsPerSecond: 5,
+            browser: false,
+          }),
+          rateLimit(http("https://base-sepolia-rpc.publicnode.com"), {
+            requestsPerSecond: 5,
             browser: false,
           }),
         );
