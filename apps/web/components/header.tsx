@@ -12,7 +12,7 @@ export function Header() {
         <div className="flex items-center gap-6">
           <Link href="/" className="group font-mono text-sm tracking-tight">
             <span className="font-bold transition-colors group-hover:text-foreground/70">
-              canonical
+              entity
             </span>
             <span className="font-medium text-muted-foreground transition-colors group-hover:text-foreground/50">
               .registry
