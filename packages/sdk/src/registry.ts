@@ -8,6 +8,7 @@ import {
 } from "viem";
 import { writeAndWait } from "./lib/tx";
 import { canonicalise, toId, resolveDepositAddress, parseAnyIdentifier } from "./utils";
+import { isNativeToken } from "./tokens";
 
 export type IdentifierState = {
   id: `0x${string}`;
@@ -64,12 +65,14 @@ export function createRegistryMethods(
         }) as any).read.predictAddress([id]);
 
     const balance = token
-      ? await publicClient.readContract({
-          address: token,
-          abi: erc20Abi,
-          functionName: "balanceOf",
-          args: [depositAddress],
-        })
+      ? isNativeToken(token)
+        ? await publicClient.getBalance({ address: depositAddress })
+        : await publicClient.readContract({
+            address: token,
+            abi: erc20Abi,
+            functionName: "balanceOf",
+            args: [depositAddress],
+          })
       : null;
 
     return {
